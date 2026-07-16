@@ -33,22 +33,24 @@ export default async function CustomerPage({
       </p>
 
       <p className="mt-4 font-bold">
-        Outstanding Balance:
-        KES {customer.creditAccount?.balance ?? 0}
+        Outstanding Balance:{" "}
+        KES{" "}
+        {Number(
+          customer.creditAccount?.balance ?? 0
+        ).toLocaleString("en-KE")}
       </p>
 
       <h2 className="text-xl mt-8 mb-4">
         Transactions
       </h2>
 
-      <ul>
-        {customer.creditAccount?.transactions.map(
-          (t) => (
-            <li key={t.id}>
-              {t.type} - KES {t.amount}
-            </li>
-          )
-        )}
+      <ul className="space-y-2">
+        {customer.creditAccount?.transactions.map((t) => (
+          <li key={t.id}>
+            {t.type} - KES{" "}
+            {Number(t.amount).toLocaleString("en-KE")}
+          </li>
+        ))}
       </ul>
     </div>
   );
