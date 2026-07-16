@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+enum UserRole {
+  ADMIN
+  MANAGER
+  CASHIER
+}
+
+enum PaymentMethod {
+  CASH
+  MPESA
+  CREDIT
+}
+
+enum PaymentStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+enum SaleStatus {
+  COMPLETED
+  PENDING
+  CANCELLED
+}
+
+model Store {
+  id        String   @id @default(cuid())
+  name      String
+  location  String?
+  createdAt DateTime @default(now())
+
+  users     User[]
+  inventory Inventory[]
+  sales     Sale[]
+  movements InventoryMovement[]
+
+  settings StoreSettings?
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id])
+  sales     Sale[]   @relation("CashierSales")
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id        String    @id @default(cuid())
+  name      String
+  sku       String    @unique
+  category  String
+  unit      String
+  price     Decimal   @db.Decimal(10, 2)
+  createdAt DateTime  @default(now())
+
+  inventory Inventory[]
+  saleItems SaleItem[]
+  movements InventoryMovement[]
+}
+
+model Inventory {
+  id        String   @id @default(cuid())
+  storeId   String
+  productId String
+  quantity  Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  store      Store   @relation(fields: [storeId], references: [id])
+  product    Product @relation(fields: [productId], references: [id])
+
+  @@unique([storeId, productId])
+}
+
+model Customer {
+  id            String          @id @default(cuid())
+  name          String
+  phone         String          @unique
+  createdAt     DateTime        @default(now())
+
+  sales         Sale[]
+  creditAccount CreditAccount?
+}
+
+model Sale {
+  id         String      @id @default(cuid())
+  storeId    String
+  customerId String?
+  cashierId  String
+  total      Decimal     @db.Decimal(10, 2)
+  status     SaleStatus  @default(COMPLETED)
+  syncStatus String      @default("PENDING")
+  createdAt  DateTime    @default(now())
+
+  store      Store      @relation(fields: [storeId], references: [id])
+  customer   Customer?  @relation(fields: [customerId], references: [id])
+  cashier    User       @relation("CashierSales", fields: [cashierId], references: [id])
+
+  items      SaleItem[]
+  payments   Payment[]
+}
+
+model SaleItem {
+  id        String    @id @default(cuid())
+  saleId    String
+  productId String
+  quantity  Int
+  unitPrice Decimal   @db.Decimal(10, 2)
+  subtotal  Decimal   @db.Decimal(10, 2)
+
+  sale      Sale      @relation(fields: [saleId], references: [id])
+  product   Product   @relation(fields: [productId], references: [id])
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  saleId    String
+  method    PaymentMethod
+  amount    Decimal       @db.Decimal(10, 2)
+  status    PaymentStatus @default(PENDING)
+  reference String?
+  createdAt DateTime      @default(now())
+
+  sale      Sale          @relation(fields: [saleId], references: [id])
+}
+
+model CreditAccount {
+  id           String    @id @default(cuid())
+  customerId   String    @unique
+  balance      Decimal   @db.Decimal(10, 2) @default(0)
+  updatedAt    DateTime  @updatedAt
+
+  customer     Customer            @relation(fields: [customerId], references: [id])
+  transactions CreditTransaction[]
+}
+
+model CreditTransaction {
+  id              String    @id @default(cuid())
+  creditAccountId String
+  saleId          String?
+  amount          Decimal   @db.Decimal(10, 2)
+  type            String
+  createdAt       DateTime  @default(now())
+
+  creditAccount   CreditAccount @relation(fields: [creditAccountId], references: [id])
+}
+
+model InventoryMovement {
+  id          String   @id @default(cuid())
+  storeId     String
+  productId   String
+  type        String
+  quantity    Int
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  store        Store   @relation(fields: [storeId], references: [id])
+  product      Product @relation(fields: [productId], references: [id])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  category    String
+  description String
+  amount      Decimal  @db.Decimal(10,2)
+  createdAt   DateTime @default(now())
+}
+
+
+model StoreSettings {
+  id                   String   @id @default(cuid())
+
+  storeId              String   @unique
+  store                Store    @relation(fields: [storeId], references: [id])
+
+  businessName         String?
+  phone                String?
+  email                String?
+  address              String?
+
+  currency             String   @default("KES")
+  timezone             String   @default("Africa/Nairobi")
+
+  receiptHeader        String?
+  receiptFooter        String?
+
+  showCashier     Boolean @default(true)
+showCustomer    Boolean @default(true)
+showLogo        Boolean @default(false)
+autoPrint       Boolean @default(false)
+printDuplicate  Boolean @default(false)
+
+  paperWidth           String   @default("80mm")
+
+  enableCash           Boolean  @default(true)
+  enableMpesa          Boolean  @default(true)
+  enableCredit         Boolean  @default(true)
+
+  allowNegativeStock   Boolean  @default(false)
+  minimumStock         Int      @default(5)
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
