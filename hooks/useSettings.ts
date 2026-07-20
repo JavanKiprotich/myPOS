@@ -1,30 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { Settings } from "@/types/settings";
 
-export type Settings = {
-  businessName: string;
-  phone: string;
-  email: string;
-  address: string;
 
-  currency: string;
-  timezone: string;
-
-  enableCash: boolean;
-  enableMpesa: boolean;
-  enableCredit: boolean;
-
-  receiptHeader: string;
-  receiptFooter: string;
-  paperWidth: string;
-
-  showCashier: boolean;
-  showCustomer: boolean;
-  showLogo: boolean;
-  autoPrint: boolean;
-  printDuplicate: boolean;
-};
 
 const defaultSettings: Settings = {
   businessName: "",
@@ -49,6 +28,77 @@ const defaultSettings: Settings = {
   showLogo: false,
   autoPrint: false,
   printDuplicate: false,
+
+  defaultPaymentMethod: "CASH",
+
+requireFullPayment: true,
+
+mpesaEnvironment: "sandbox",
+
+mpesaShortcode: "",
+
+mpesaTillNumber: "",
+
+mpesaConsumerKey: "",
+
+mpesaConsumerSecret: "",
+
+mpesaPasskey: "",
+
+mpesaCallbackUrl: "",
+
+mpesaAutoVerify: true,
+
+// Inventory Settings
+lowStockAlert: 5,
+
+allowNegativeStock: false,
+
+autoDeductStock: true,
+
+trackInventory: true,
+
+stockValuation: "AVERAGE",
+
+requireBarcode: false,
+
+// User & Role Settings
+sessionTimeout: 30,
+
+managerRefund: true,
+managerPriceOverride: true,
+managerCancelSale: true,
+
+cashierSell: true,
+cashierPrintReceipt: true,
+cashierDeleteSale: false,
+cashierChangePrice: false,
+
+// Security Settings
+requirePinRefund: true,
+requirePinVoidSale: true,
+requirePinDiscount: true,
+requirePinCashDrawer: false,
+
+minimumPasswordLength: 8,
+autoLogoutMinutes: 30,
+
+enableAuditLog: true,
+
+// Backup Settings
+autoBackup: false,
+
+backupFrequency: "DAILY",
+
+retainBackups: 30,
+
+backupSales: true,
+
+backupInventory: true,
+
+backupCustomers: true,
+
+backupSettings: true,
 };
 
 export function useSettings() {

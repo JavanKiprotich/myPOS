@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+const STORE_ID = "cmrj98gz70000mneof8jfrrlv"; // replace later with logged-in user's store
+
 export async function GET() {
   try {
     const products = await prisma.product.findMany({
@@ -8,10 +10,21 @@ export async function GET() {
         name: "asc",
       },
 
-      include: {
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        category: true,
+        unit: true,
+        price: true,
+
         inventory: {
-          include: {
-            store: true,
+          where: {
+            storeId: STORE_ID,
+          },
+
+          select: {
+            quantity: true,
           },
         },
       },
@@ -22,12 +35,8 @@ export async function GET() {
     console.error(error);
 
     return NextResponse.json(
-      {
-        error: "Failed to fetch products",
-      },
-      {
-        status: 500,
-      }
+      { error: "Failed to fetch products" },
+      { status: 500 }
     );
   }
 }
@@ -46,19 +55,13 @@ export async function POST(request) {
       },
     });
 
-    return NextResponse.json(product, {
-      status: 201,
-    });
+    return NextResponse.json(product, { status: 201 });
   } catch (error) {
     console.error(error);
 
     return NextResponse.json(
-      {
-        error: "Failed to create product",
-      },
-      {
-        status: 500,
-      }
+      { error: "Failed to create product" },
+      { status: 500 }
     );
   }
 }

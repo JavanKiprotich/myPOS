@@ -1,9 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import StoreSettings from "@/components/settings/StoreSettings";
+
 import PageHeader from "@/components/ui/PageHeader";
+
+import StoreSettings from "@/components/settings/StoreSettings";
 import ReceiptSettings from "@/components/settings/ReceiptSettings";
+import PaymentSettings from "@/components/settings/PaymentSettings";
+import InventorySettings from "@/components/settings/InventorySettings";
+import UserSettings from "@/components/settings/UserSettings";
+import SecuritySettings from "@/components/settings/SecuritySettings";
+
 
 const tabs = [
   "Store",
@@ -22,13 +29,13 @@ export default function SettingsPage() {
   return (
     <div className="p-6">
       <PageHeader
-  title="Settings"
-  description="Configure your liquor POS system."
-/>
+        title="Settings"
+        description="Configure your liquor POS system."
+      />
 
       <div className="grid grid-cols-12 gap-6">
         {/* Sidebar */}
-        <aside className="col-span-3 border rounded-xl p-4">
+        <aside className="col-span-3 rounded-xl border p-4">
           <ul className="space-y-2">
             {tabs.map((tab) => (
               <li
@@ -47,8 +54,8 @@ export default function SettingsPage() {
         </aside>
 
         {/* Content */}
-        <main className="col-span-9 border rounded-xl p-6">
-          <h2 className="text-2xl font-semibold mb-6">
+        <main className="col-span-9 rounded-xl border p-6">
+          <h2 className="mb-6 text-2xl font-semibold">
             {activeTab} Settings
           </h2>
 
@@ -56,29 +63,13 @@ export default function SettingsPage() {
 
           {activeTab === "Receipt" && <ReceiptSettings />}
 
-          {activeTab === "Payments" && (
-            <p className="text-gray-500">
-              Payment settings coming soon...
-            </p>
-          )}
+          {activeTab === "Payments" && <PaymentSettings />}
 
-          {activeTab === "Inventory" && (
-            <p className="text-gray-500">
-              Inventory settings coming soon...
-            </p>
-          )}
+          {activeTab === "Inventory" && <InventorySettings />}
 
-          {activeTab === "Users" && (
-            <p className="text-gray-500">
-              User management coming soon...
-            </p>
-          )}
+          {activeTab === "Users" && <UserSettings />}
 
-          {activeTab === "Security" && (
-            <p className="text-gray-500">
-              Security settings coming soon...
-            </p>
-          )}
+          {activeTab === "Security" && <SecuritySettings />}
 
           {activeTab === "Backup" && (
             <p className="text-gray-500">

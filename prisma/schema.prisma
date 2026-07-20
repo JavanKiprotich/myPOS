@@ -49,13 +49,20 @@ model User {
   name      String
   email     String   @unique
   password  String
+
+  pin       String?
+
   role      UserRole
+
+  active    Boolean  @default(true)
+
   storeId   String
   store     Store    @relation(fields: [storeId], references: [id])
+
   sales     Sale[]   @relation("CashierSales")
+
   createdAt DateTime @default(now())
 }
-
 model Product {
   id        String    @id @default(cuid())
   name      String
@@ -192,6 +199,21 @@ model StoreSettings {
   currency             String   @default("KES")
   timezone             String   @default("Africa/Nairobi")
 
+
+// Payment Settings
+defaultPaymentMethod String @default("CASH")
+requireFullPayment   Boolean @default(true)
+
+// M-Pesa Settings
+mpesaEnvironment     String  @default("sandbox")
+mpesaShortcode       String?
+mpesaTillNumber      String?
+mpesaConsumerKey     String?
+mpesaConsumerSecret  String?
+mpesaPasskey         String?
+mpesaCallbackUrl     String?
+mpesaAutoVerify      Boolean @default(true)
+
   receiptHeader        String?
   receiptFooter        String?
 
@@ -201,7 +223,16 @@ showLogo        Boolean @default(false)
 autoPrint       Boolean @default(false)
 printDuplicate  Boolean @default(false)
 
+
   paperWidth           String   @default("80mm")
+
+  // Inventory Settings
+lowStockAlert      Int     @default(5)
+
+autoDeductStock    Boolean @default(true)
+trackInventory     Boolean @default(true)
+stockValuation     String  @default("AVERAGE")
+requireBarcode     Boolean @default(false)
 
   enableCash           Boolean  @default(true)
   enableMpesa          Boolean  @default(true)
@@ -210,6 +241,41 @@ printDuplicate  Boolean @default(false)
   allowNegativeStock   Boolean  @default(false)
   minimumStock         Int      @default(5)
 
+  
+
+// User & Role Settings
+sessionTimeout      Int     @default(30)
+
+managerRefund       Boolean @default(true)
+managerPriceOverride Boolean @default(true)
+managerCancelSale   Boolean @default(true)
+
+cashierSell         Boolean @default(true)
+cashierPrintReceipt Boolean @default(true)
+cashierDeleteSale   Boolean @default(false)
+cashierChangePrice  Boolean @default(false)
+
+// Security Settings
+requirePinRefund      Boolean @default(true)
+requirePinVoidSale    Boolean @default(true)
+requirePinDiscount    Boolean @default(true)
+requirePinCashDrawer  Boolean @default(false)
+
+minimumPasswordLength Int     @default(8)
+autoLogoutMinutes     Int     @default(30)
+
+enableAuditLog        Boolean @default(true)
+
+// Backup Settings
+autoBackup            Boolean @default(false)
+backupFrequency       String  @default("DAILY")
+retainBackups         Int     @default(30)
+backupSales           Boolean @default(true)
+backupInventory       Boolean @default(true)
+backupCustomers       Boolean @default(true)
+backupSettings        Boolean @default(true)
+
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
+
 }

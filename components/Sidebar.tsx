@@ -48,6 +48,10 @@ export default function Sidebar() {
       label: "Expenses",
     },
     {
+  label: "Users",
+  href: "/users",
+},
+    {
   href: "/settings",
   icon: "⚙️",
   label: "Settings",

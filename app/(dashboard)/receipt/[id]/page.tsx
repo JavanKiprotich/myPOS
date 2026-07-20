@@ -25,6 +25,14 @@ export default function ReceiptPage() {
     }
   }
 
+  useEffect(() => {
+  if (sale?.store?.settings?.autoPrint) {
+    setTimeout(() => {
+      window.print();
+    }, 500);
+  }
+}, [sale]);
+
   function formatMoney(value: number) {
     return Number(value).toLocaleString("en-KE", {
       minimumFractionDigits: 2,
@@ -42,6 +50,11 @@ export default function ReceiptPage() {
     );
   }
 
+const settings = sale.store?.settings;
+
+const paperWidth =
+  settings?.paperWidth === "58mm" ? "58mm" : "80mm";
+
   const receiptNumber = sale.id
     .slice(-8)
     .toUpperCase();
@@ -52,7 +65,8 @@ export default function ReceiptPage() {
 
         <div
           id="receipt"
-          className="bg-white w-[80mm] mx-auto shadow-xl rounded-lg p-5 text-sm"
+          style={{ width: paperWidth }}
+className="bg-white mx-auto shadow-xl rounded-lg p-5 text-sm"
         >
 
           {/* ===========================
@@ -61,29 +75,34 @@ export default function ReceiptPage() {
 
           <div className="text-center">
 
-            {/* Replace this later with your logo image */}
-            <div className="text-5xl mb-2">
-              🥃
-            </div>
+  {/* Logo (until image upload is implemented) */}
+  <div className="text-5xl mb-2">
+    🥃
+  </div>
 
-            <h1 className="text-2xl font-extrabold tracking-widest">
-              SHOTO'CLOCK
-            </h1>
+  <h1 className="text-2xl font-extrabold tracking-widest">
+    {settings?.businessName || sale.store?.name}
+  </h1>
 
-            <p className="text-xs text-gray-600 mt-1">
-              Wines • Spirits • More
-            </p>
+  {settings?.receiptHeader && (
+    <p className="text-xs text-gray-600 mt-1">
+      {settings.receiptHeader}
+    </p>
+  )}
 
-            <p className="text-xs text-gray-500 mt-3">
-              Nairobi, Kenya
-            </p>
+  {settings?.address && (
+    <p className="text-xs text-gray-500 mt-3">
+      {settings.address}
+    </p>
+  )}
 
-            <p className="text-xs text-gray-500">
-              Tel: +254 700 000 000
-            </p>
+  {settings?.phone && (
+    <p className="text-xs text-gray-500">
+      Tel: {settings.phone}
+    </p>
+  )}
 
-          </div>
-
+</div>
           <hr className="my-4 border-dashed" />
 
           {/* ===========================
@@ -112,22 +131,21 @@ export default function ReceiptPage() {
               </span>
             </div>
 
-            <div className="flex justify-between">
-              <span>Cashier</span>
+            {settings?.showCashier !== false && (
+  <div className="flex justify-between">
+    <span>Cashier</span>
 
-              <span>
-                {sale.cashier?.name}
-              </span>
-            </div>
+    <span>{sale.cashier?.name}</span>
+  </div>
+)}
 
-            <div className="flex justify-between">
-              <span>Customer</span>
+            {settings?.showCustomer !== false && (
+  <div className="flex justify-between">
+    <span>Customer</span>
 
-              <span>
-                {sale.customer?.name ??
-                  "Walk-in"}
-              </span>
-            </div>
+    <span>{sale.customer?.name ?? "Walk-in"}</span>
+  </div>
+)}
 
             <div className="flex justify-between">
               <span>Payment</span>
@@ -215,32 +233,29 @@ export default function ReceiptPage() {
 
           <div className="mt-6 text-center text-xs space-y-2">
 
-            <p>
-              Thank you for choosing
-            </p>
+  <p>Thank you for choosing</p>
 
-            <p className="font-bold text-base tracking-wider">
-              SHOTO'CLOCK
-            </p>
+  <p className="font-bold text-base tracking-wider">
+    {settings?.businessName || sale.store?.name}
+  </p>
 
-            <p>
-              Wines • Spirits • More
-            </p>
+  {settings?.receiptFooter && (
+    <p>{settings.receiptFooter}</p>
+  )}
 
-            <p className="font-semibold">
-              🍻 Drink Responsibly 🍻
-            </p>
+  <p className="font-semibold">
+    🍻 Drink Responsibly 🍻
+  </p>
 
-            <p className="text-gray-500">
-              Please keep this receipt
-              as proof of purchase.
-            </p>
+  <p className="text-gray-500">
+    Please keep this receipt as proof of purchase.
+  </p>
 
-            <p className="text-gray-400 mt-3">
-              Powered by SHOTO'CLOCK POS
-            </p>
+  <p className="text-gray-400 mt-3">
+    Powered by SHOTO'CLOCK POS
+  </p>
 
-          </div>
+</div>
 
         </div>
 

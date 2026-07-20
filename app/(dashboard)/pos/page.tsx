@@ -13,12 +13,19 @@ export default function POSPage() {
   const [user, setUser] = useState<any>(null);
   const [showMpesaModal, setShowMpesaModal] = useState(false);
 const [mpesaPhone, setMpesaPhone] = useState("");
+const [settings, setSettings] = useState<any>(null);
 
-  useEffect(() => {
-    loadProducts();
-    loadCustomers();
-    loadUser();
-  }, []);
+ useEffect(() => {
+  loadUser();
+  loadProducts();
+  loadSettings();
+}, []);
+
+useEffect(() => {
+  if (settings?.defaultPaymentMethod) {
+    setPaymentMethod(settings.defaultPaymentMethod);
+  }
+}, [settings]);
 
   async function loadProducts() {
     const response = await fetch("/api/products");
@@ -40,6 +47,20 @@ const [mpesaPhone, setMpesaPhone] = useState("");
     setUser(data);
   }
 }
+
+async function loadSettings() {
+  try {
+    const response = await fetch("/api/settings");
+
+    if (response.ok) {
+      const data = await response.json();
+      setSettings(data);
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}
+
   async function logout() {
   await fetch("/api/auth/logout", {
     method: "POST",
@@ -164,6 +185,9 @@ function formatMpesaPhone(phone: string) {
       return;
     }
 
+    console.log("Current user:", user);
+    console.log("Store ID:", user?.storeId);
+
     try {
       const response = await fetch("/api/sales", {
         method: "POST",
@@ -172,10 +196,8 @@ function formatMpesaPhone(phone: string) {
             "application/json",
         },
         body: JSON.stringify({
-          storeId:
-            "cmrj98gz70000mneof8jfrrlv",
-          cashierId:
-            "cmrjcz4t90001mneol7a33day",
+          storeId: user.storeId,
+cashierId: user.id,
           customerId:
             customerId || null,
           paymentMethod,
@@ -413,28 +435,22 @@ async function sendStkPush() {
             </label>
 
             <select
-              className="border p-2 w-full"
-              value={paymentMethod}
-              onChange={(e) =>
-                setPaymentMethod(
-                  e.target.value
-                )
-              }
-            >
+  value={paymentMethod}
+  onChange={(e) => setPaymentMethod(e.target.value)}
+  className="w-full border rounded-lg p-3"
+>
+  {settings?.enableCash && (
+    <option value="CASH">Cash</option>
+  )}
 
-              <option value="CASH">
-                Cash
-              </option>
+  {settings?.enableMpesa && (
+    <option value="MPESA">M-Pesa</option>
+  )}
 
-              <option value="MPESA">
-                M-Pesa
-              </option>
-
-              <option value="CREDIT">
-                Credit
-              </option>
-
-            </select>
+  {settings?.enableCredit && (
+    <option value="CREDIT">Credit</option>
+  )}
+</select>
 
           </div>
 
