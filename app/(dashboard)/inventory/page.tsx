@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 export default function InventoryPage() {
+  const [products, setProducts] = useState<any[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
   const [movements, setMovements] = useState<any[]>([]);
 
@@ -13,9 +14,16 @@ export default function InventoryPage() {
   const STORE_ID = "cmrj98gz70000mneof8jfrrlv";
 
   useEffect(() => {
+    loadProducts();
     loadInventory();
     loadMovements();
   }, []);
+
+  async function loadProducts() {
+    const response = await fetch("/api/products");
+    const data = await response.json();
+    setProducts(data);
+  }
 
   async function loadInventory() {
     const response = await fetch("/api/inventory");
@@ -52,8 +60,11 @@ export default function InventoryPage() {
 
     if (result.success) {
       alert("Stock added successfully");
+
+      setSelectedItem("");
       setQuantity("");
       setReason("");
+
       loadInventory();
       loadMovements();
     } else {
@@ -84,8 +95,11 @@ export default function InventoryPage() {
 
     if (result.success) {
       alert("Stock removed successfully");
+
+      setSelectedItem("");
       setQuantity("");
       setReason("");
+
       loadInventory();
       loadMovements();
     } else {
@@ -93,9 +107,11 @@ export default function InventoryPage() {
     }
   }
 
-  const totalValue = inventory.reduce((sum: number, item: any) => {
-    return sum + item.quantity * Number(item.product.price);
-  }, 0);
+  const totalValue = inventory.reduce(
+    (sum: number, item: any) =>
+      sum + item.quantity * Number(item.product.price),
+    0
+  );
 
   return (
     <div className="p-6">
@@ -104,7 +120,7 @@ export default function InventoryPage() {
         Inventory Management
       </h1>
 
-      <div className="mb-6 p-4 border rounded">
+      <div className="border rounded p-4 mb-6">
 
         <h2 className="text-xl font-semibold mb-4">
           Stock Adjustment
@@ -115,29 +131,31 @@ export default function InventoryPage() {
           value={selectedItem}
           onChange={(e) => setSelectedItem(e.target.value)}
         >
-          <option value="">Select Product</option>
+          <option value="">
+            Select Product
+          </option>
 
-          {inventory.map((item: any) => (
+          {products.map((product: any) => (
             <option
-              key={item.product.id}
-              value={item.product.id}
+              key={product.id}
+              value={product.id}
             >
-              {item.product.name}
+              {product.name}
             </option>
           ))}
         </select>
 
         <input
           type="number"
-          placeholder="Quantity"
           className="border p-2 w-full mb-3"
+          placeholder="Quantity"
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
         />
 
         <input
-          placeholder="Reason (optional)"
           className="border p-2 w-full mb-3"
+          placeholder="Reason (optional)"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
         />
@@ -160,7 +178,8 @@ export default function InventoryPage() {
 
       </div>
 
-      <div className="mb-6 p-4 border rounded bg-gray-100">
+      <div className="border rounded p-4 mb-6 bg-gray-100">
+
         <h2 className="text-xl font-semibold">
           Total Stock Value
         </h2>
@@ -168,6 +187,7 @@ export default function InventoryPage() {
         <p className="text-2xl font-bold">
           KES {totalValue.toLocaleString()}
         </p>
+
       </div>
 
       <h2 className="text-xl font-semibold mb-3">
@@ -180,21 +200,13 @@ export default function InventoryPage() {
 
           <tr className="bg-gray-100">
 
-            <th className="border p-2">
-              Product
-            </th>
+            <th className="border p-2">Product</th>
 
-            <th className="border p-2">
-              Quantity
-            </th>
+            <th className="border p-2">Quantity</th>
 
-            <th className="border p-2">
-              Unit Price
-            </th>
+            <th className="border p-2">Unit Price</th>
 
-            <th className="border p-2">
-              Value
-            </th>
+            <th className="border p-2">Value</th>
 
           </tr>
 
@@ -212,27 +224,24 @@ export default function InventoryPage() {
 
               <td className="border p-2">
 
-  <span
-    className={`px-3 py-1 rounded-full text-white font-bold ${
-      item.quantity <= 5
-        ? "bg-red-600"
-        : "bg-green-600"
-    }`}
-  >
-    {item.quantity}
-  </span>
+                <span
+                  className={`px-3 py-1 rounded-full text-white font-bold ${
+                    item.quantity <= 5
+                      ? "bg-red-600"
+                      : "bg-green-600"
+                  }`}
+                >
+                  {item.quantity}
+                </span>
 
-</td>
+              </td>
 
               <td className="border p-2">
                 KES {Number(item.product.price)}
               </td>
 
               <td className="border p-2">
-                KES {(
-                  item.quantity *
-                  Number(item.product.price)
-                ).toLocaleString()}
+                KES {(item.quantity * Number(item.product.price)).toLocaleString()}
               </td>
 
             </tr>
@@ -253,25 +262,15 @@ export default function InventoryPage() {
 
           <tr className="bg-gray-100">
 
-            <th className="border p-2">
-              Date
-            </th>
+            <th className="border p-2">Date</th>
 
-            <th className="border p-2">
-              Product
-            </th>
+            <th className="border p-2">Product</th>
 
-            <th className="border p-2">
-              Type
-            </th>
+            <th className="border p-2">Type</th>
 
-            <th className="border p-2">
-              Quantity
-            </th>
+            <th className="border p-2">Quantity</th>
 
-            <th className="border p-2">
-              Reason
-            </th>
+            <th className="border p-2">Reason</th>
 
           </tr>
 
@@ -284,9 +283,7 @@ export default function InventoryPage() {
             <tr key={movement.id}>
 
               <td className="border p-2">
-                {new Date(
-                  movement.createdAt
-                ).toLocaleString()}
+                {new Date(movement.createdAt).toLocaleString()}
               </td>
 
               <td className="border p-2">

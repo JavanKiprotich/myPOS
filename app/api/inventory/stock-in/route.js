@@ -6,17 +6,34 @@ export async function POST(request) {
     const body = await request.json();
 
     await prisma.$transaction(async (tx) => {
-      await tx.inventory.updateMany({
+
+      const existingInventory = await tx.inventory.findFirst({
         where: {
           storeId: body.storeId,
           productId: body.productId,
         },
-        data: {
-          quantity: {
-            increment: Number(body.quantity),
-          },
-        },
       });
+
+      if (existingInventory) {
+        await tx.inventory.update({
+          where: {
+            id: existingInventory.id,
+          },
+          data: {
+            quantity: {
+              increment: Number(body.quantity),
+            },
+          },
+        });
+      } else {
+        await tx.inventory.create({
+          data: {
+            storeId: body.storeId,
+            productId: body.productId,
+            quantity: Number(body.quantity),
+          },
+        });
+      }
 
       await tx.inventoryMovement.create({
         data: {
@@ -27,11 +44,13 @@ export async function POST(request) {
           reason: body.reason || "Stock received",
         },
       });
+
     });
 
     return NextResponse.json({
       success: true,
     });
+
   } catch (error) {
     console.error(error);
 

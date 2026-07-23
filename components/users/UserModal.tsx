@@ -61,30 +61,42 @@ export default function UserModal({
     return alert("Email is required.");
   }
 
-  if (!form.password) {
-    return alert("Password is required.");
-  }
+  if (!user && !form.password) {
+  return alert("Password is required.");
+}
 
-  if (form.password !== form.confirmPassword) {
-    return alert("Passwords do not match.");
-  }
+  if (
+  form.password &&
+  form.password !== form.confirmPassword
+) {
+  return alert("Passwords do not match.");
+}
 
-  if (form.pin !== form.confirmPin) {
-    return alert("PINs do not match.");
-  }
+  if (
+  form.pin &&
+  form.pin !== form.confirmPin
+) {
+  return alert("PINs do not match.");
+}
 
-  if (form.pin.length < 4 || form.pin.length > 6) {
-    return alert("PIN must be 4-6 digits.");
-  }
+  if (
+  form.pin &&
+  (form.pin.length < 4 || form.pin.length > 6)
+) {
+  return alert("PIN must be 4-6 digits.");
+}
 
   try {
-    const response = await fetch("/api/users", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(form),
-    });
+   const response = await fetch(
+  user ? `/api/users/${user.id}` : "/api/users",
+  {
+    method: user ? "PUT" : "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(form),
+  }
+);
 
     const data = await response.json();
 
@@ -265,7 +277,7 @@ export default function UserModal({
   onClick={handleSave}
   className="rounded-lg bg-blue-600 px-5 py-2 text-white hover:bg-blue-700"
 >
-  Save User
+ {user ? "Update User" : "Save User"}
 </button>
 
 </div>

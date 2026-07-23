@@ -47,15 +47,23 @@ export default function Sidebar() {
       icon: "🧾",
       label: "Expenses",
     },
-    {
-  label: "Users",
+   {
   href: "/users",
+  icon: "👤",
+  label: "Users",
 },
     {
   href: "/settings",
   icon: "⚙️",
   label: "Settings",
 },
+
+{
+  href: "/audit",
+  icon: "📋",
+  label: "Audit Log",
+}
+
   ];
 
   return (

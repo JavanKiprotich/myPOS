@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import { cookies } from "next/headers";
 import { verifySession } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export async function GET() {
   try {
@@ -83,6 +84,15 @@ if (!session) {
         storeId: session.storeId,
       },
     });
+
+  await logAudit({
+  userId: session.id,
+  action: "USER_CREATED",
+  target: user.name,
+  details: `Created ${user.role} account`,
+});
+
+
 
     return NextResponse.json(user, {
       status: 201,

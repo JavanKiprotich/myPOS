@@ -5,23 +5,28 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
-    const inventory =
-      await prisma.inventory.findFirst({
-        where: {
-          storeId: body.storeId,
-          productId: body.productId,
-        },
-      });
+    const inventory = await prisma.inventory.findFirst({
+      where: {
+        storeId: body.storeId,
+        productId: body.productId,
+      },
+    });
 
-    if (
-      !inventory ||
-      inventory.quantity <
-        Number(body.quantity)
-    ) {
+    if (!inventory) {
       return NextResponse.json(
         {
-          error:
-            "Insufficient stock",
+          error: "Product not found in inventory.",
+        },
+        {
+          status: 404,
+        }
+      );
+    }
+
+    if (inventory.quantity < Number(body.quantity)) {
+      return NextResponse.json(
+        {
+          error: "Insufficient stock.",
         },
         {
           status: 400,
@@ -30,15 +35,13 @@ export async function POST(request) {
     }
 
     await prisma.$transaction(async (tx) => {
-      await tx.inventory.updateMany({
+      await tx.inventory.update({
         where: {
-          storeId: body.storeId,
-          productId: body.productId,
+          id: inventory.id,
         },
         data: {
           quantity: {
-            decrement:
-              Number(body.quantity),
+            decrement: Number(body.quantity),
           },
         },
       });
@@ -49,9 +52,7 @@ export async function POST(request) {
           productId: body.productId,
           quantity: Number(body.quantity),
           type: "STOCK_OUT",
-          reason:
-            body.reason ||
-            "Manual adjustment",
+          reason: body.reason || "Manual adjustment",
         },
       });
     });
@@ -59,6 +60,7 @@ export async function POST(request) {
     return NextResponse.json({
       success: true,
     });
+
   } catch (error) {
     console.error(error);
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import PageHeader from "@/components/ui/PageHeader";
 import UserModal from "@/components/users/UserModal";
+import PinVerificationModal from "@/components/modals/PinVerificationModal";
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
@@ -12,6 +13,9 @@ export default function UsersPage() {
 
   const [editingUser, setEditingUser] = useState(null);
 const [showModal, setShowModal] = useState(false);
+const [showPinModal, setShowPinModal] = useState(false);
+const [selectedUserId, setSelectedUserId] = useState(null);
+const [verifyingPin, setVerifyingPin] = useState(false);
 
 
   useEffect(() => {
@@ -30,6 +34,74 @@ const [showModal, setShowModal] = useState(false);
       console.error(error);
     }
   }
+
+
+  function handleDelete(id) {
+  const user = users.find((u) => u.id === id);
+
+  const confirmed = window.confirm(
+    user.active
+      ? `Deactivate ${user.name}?`
+      : `Activate ${user.name}?`
+  );
+
+  if (!confirmed) return;
+
+  setSelectedUserId(id);
+  setShowPinModal(true);
+}
+
+
+async function verifyPin(pin) {
+  try {
+    setVerifyingPin(true);
+
+    const response = await fetch(
+      "/api/security/verify-pin",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ pin }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.error);
+      return;
+    }
+
+    const deleteResponse = await fetch(
+      `/api/users/${selectedUserId}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    const deleteData = await deleteResponse.json();
+
+    if (!deleteResponse.ok) {
+      alert(deleteData.error);
+      return;
+    }
+
+    setShowPinModal(false);
+    setSelectedUserId(null);
+
+    loadUsers();
+
+    alert(deleteData.message);
+
+  } catch (error) {
+    console.error(error);
+    alert("Failed to verify PIN.");
+  } finally {
+    setVerifyingPin(false);
+  }
+}
 
   const filteredUsers = users.filter((user) => {
     const term = search.toLowerCase();
@@ -178,9 +250,16 @@ const [showModal, setShowModal] = useState(false);
   Edit
 </button>
 
-                      <button className="font-medium text-red-600 hover:text-red-800">
-                        Delete
-                      </button>
+<button
+  onClick={() => handleDelete(user.id)}
+  className={`ml-3 font-medium ${
+    user.active
+      ? "text-red-600 hover:text-red-800"
+      : "text-green-600 hover:text-green-800"
+  }`}
+>
+  {user.active ? "Deactivate" : "Activate"}
+</button>
 
                     </div>
 
@@ -210,6 +289,17 @@ const [showModal, setShowModal] = useState(false);
     setEditingUser(null);
     setShowModal(false);
   }}
+/>
+
+
+<PinVerificationModal
+  open={showPinModal}
+  loading={verifyingPin}
+  onCancel={() => {
+    setShowPinModal(false);
+    setSelectedUserId(null);
+  }}
+  onVerify={verifyPin}
 />
 
     </div>

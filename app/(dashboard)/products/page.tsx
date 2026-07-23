@@ -1,6 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Toast from "@/components/ui/Toast";
+
+import {
+  playBeep,
+  playError,
+  playSuccess,
+} from "@/lib/sounds";
 
 export default function ProductsPage() {
   const [form, setForm] = useState({
@@ -9,11 +16,51 @@ export default function ProductsPage() {
     category: "",
     unit: "",
     price: "",
+    barcode: "",
   });
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+function showToast(
+  message: string,
+  type: "success" | "error" = "success"
+) {
+  setToast({
+    show: true,
+    message,
+    type,
+  });
 
+  setTimeout(() => {
+    setToast({
+      show: false,
+      message: "",
+      type: "success",
+    });
+  }, 2500);
+}
+
+  const [toast, setToast] = useState({
+  show: false,
+  message: "",
+  type: "success" as "success" | "error",
+});
+
+function playBeep() {
+  const audio = new Audio("/sounds/beep.mp3");
+  audio.play().catch(() => {});
+}
+
+function playError() {
+  new Audio("/sounds/error.mp3").play().catch(() => {});
+}
+
+function playSuccess() {
+  new Audio("/sounds/success.mp3").play().catch(() => {});
+}
+
+ async function handleSubmit(e: React.FormEvent) {
+  e.preventDefault();
+
+  try {
     const response = await fetch("/api/products", {
       method: "POST",
       headers: {
@@ -25,18 +72,48 @@ export default function ProductsPage() {
       }),
     });
 
-    if (response.ok) {
-      alert("Product added successfully");
+    const data = await response.json();
 
-      setForm({
-        name: "",
-        sku: "",
-        category: "",
-        unit: "",
-        price: "",
-      });
+    if (!response.ok) {
+      showToast(
+        data.error || "Failed to add product.",
+        "error"
+      );
+playError();
+
+      return;
     }
+
+     
+
+    showToast(
+      "Product added successfully.",
+      "success"
+    );
+
+    playSuccess();
+
+    setForm({
+      name: "",
+      sku: "",
+      category: "",
+      unit: "",
+      price: "",
+      barcode: "",
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    showToast(
+      "Something went wrong.",
+      "error"
+    );
+playError();
+
   }
+}
+
 
   return (
     <div className="max-w-xl mx-auto p-6">
@@ -72,6 +149,31 @@ export default function ProductsPage() {
           }
         />
 
+
+        <div>
+  
+
+  <div>
+  <label className="mb-1 block text-sm font-medium">
+    Barcode
+  </label>
+
+  <input
+    type="text"
+    className="w-full rounded-lg border p-3"
+    value={form.barcode}
+    onChange={(e) =>
+      setForm({
+        ...form,
+        barcode: e.target.value,
+      })
+    }
+    placeholder="Scan or enter barcode"
+    autoComplete="off"
+    autoFocus
+  />
+</div>
+</div>
         <input
           className="border p-2 w-full"
           placeholder="Category"
@@ -83,6 +185,8 @@ export default function ProductsPage() {
             })
           }
         />
+
+        
 
         <input
           className="border p-2 w-full"
@@ -116,6 +220,13 @@ export default function ProductsPage() {
           Save Product
         </button>
       </form>
+
+
+      <Toast
+  show={toast.show}
+  message={toast.message}
+  type={toast.type}
+/>
     </div>
   );
 }

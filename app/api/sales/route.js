@@ -8,10 +8,42 @@ export async function POST(request) {
     const sale = await prisma.$transaction(async (tx) => {
       let total = 0;
 
+      // Calculate total
       for (const item of body.items) {
         total += Number(item.price) * item.quantity;
       }
 
+      // Verify stock before creating the sale
+      for (const item of body.items) {
+
+        console.log("Checking item:", item);
+console.log("Store:", body.storeId);
+
+        const inventory = await tx.inventory.findFirst({
+          where: {
+            storeId: body.storeId,
+            productId: item.productId,
+          },
+          include: {
+            product: true,
+          },
+        });
+        console.log("Inventory:", inventory);
+
+        if (!inventory) {
+          throw new Error(
+            `Inventory not found for product ${item.productId}.`
+          );
+        }
+
+        if (inventory.quantity < item.quantity) {
+          throw new Error(
+            `Only ${inventory.quantity} ${inventory.product.name} available in stock.`
+          );
+        }
+      }
+
+      // Create sale
       const createdSale = await tx.sale.create({
         data: {
           storeId: body.storeId,
@@ -22,6 +54,7 @@ export async function POST(request) {
         },
       });
 
+      // Create sale items and deduct stock
       for (const item of body.items) {
         const subtotal =
           Number(item.price) * item.quantity;
@@ -49,6 +82,7 @@ export async function POST(request) {
         });
       }
 
+      // Create payment
       await tx.payment.create({
         data: {
           saleId: createdSale.id,
@@ -61,7 +95,7 @@ export async function POST(request) {
         },
       });
 
-      // CREDIT SALE LOGIC
+      // Credit sale
       if (
         body.paymentMethod === "CREDIT" &&
         body.customerId
@@ -84,8 +118,7 @@ export async function POST(request) {
 
         await tx.creditTransaction.create({
           data: {
-            creditAccountId:
-              creditAccount.id,
+            creditAccountId: creditAccount.id,
             saleId: createdSale.id,
             amount: total,
             type: "SALE",
@@ -97,15 +130,21 @@ export async function POST(request) {
     });
 
     return NextResponse.json(sale);
+
   } catch (error) {
     console.error(error);
 
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to create sale";
+
     return NextResponse.json(
       {
-        error: "Failed to create sale",
+        error: message,
       },
       {
-        status: 500,
+        status: 400,
       }
     );
   }

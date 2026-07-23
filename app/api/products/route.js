@@ -14,6 +14,7 @@ export async function GET() {
         id: true,
         name: true,
         sku: true,
+        barcode: true,
         category: true,
         unit: true,
         price: true,
@@ -31,6 +32,7 @@ export async function GET() {
     });
 
     return NextResponse.json(products);
+
   } catch (error) {
     console.error(error);
 
@@ -49,13 +51,17 @@ export async function POST(request) {
       data: {
         name: body.name,
         sku: body.sku,
+        barcode: body.barcode || null,
         category: body.category,
         unit: body.unit,
         price: Number(body.price),
       },
     });
 
-    return NextResponse.json(product, { status: 201 });
+    return NextResponse.json(product, {
+      status: 201,
+    });
+
   } catch (error) {
     console.error(error);
 

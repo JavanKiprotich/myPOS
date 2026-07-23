@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Toast from "@/components/ui/Toast";
+
+import {
+  playBeep,
+  playError,
+  playSuccess,
+} from "@/lib/sounds";
+
 
 
 export default function POSPage() {
@@ -14,11 +22,23 @@ export default function POSPage() {
   const [showMpesaModal, setShowMpesaModal] = useState(false);
 const [mpesaPhone, setMpesaPhone] = useState("");
 const [settings, setSettings] = useState<any>(null);
+const [barcode, setBarcode] = useState("");
+const barcodeRef = useRef<HTMLInputElement>(null);
+
+const [toast, setToast] = useState({
+  show: false,
+  message: "",
+  type: "success" as "success" | "error",
+});
 
  useEffect(() => {
   loadUser();
   loadProducts();
   loadSettings();
+}, []);
+
+useEffect(() => {
+  barcodeRef.current?.focus();
 }, []);
 
 useEffect(() => {
@@ -69,37 +89,39 @@ async function loadSettings() {
   window.location.href = "/login";
 }
   function addToCart(product: any) {
-    const existing = cart.find(
-      (item) => item.id === product.id
+  const stock = product.inventory?.[0]?.quantity ?? 0;
+
+  if (stock <= 0) {
+    playError();
+
+    showToast(
+      `${product.name} is out of stock.`,
+      "error"
     );
 
-    if (existing) {
-      setCart(
-        cart.map((item) =>
-          item.id === product.id
-            ? {
-                ...item,
-                quantity: item.quantity + 1,
-              }
-            : item
-        )
+    return;
+  }
+
+  const existing = cart.find(
+    (item) => item.id === product.id
+  );
+
+  if (existing) {
+
+    if (existing.quantity >= stock) {
+      playError();
+
+      showToast(
+        `Only ${stock} ${product.name} available.`,
+        "error"
       );
+
       return;
     }
 
-    setCart([
-      ...cart,
-      {
-        ...product,
-        quantity: 1,
-      },
-    ]);
-  }
-
-  function increaseQty(id: string) {
     setCart(
       cart.map((item) =>
-        item.id === id
+        item.id === product.id
           ? {
               ...item,
               quantity: item.quantity + 1,
@@ -107,7 +129,138 @@ async function loadSettings() {
           : item
       )
     );
+
+    return;
   }
+
+  setCart([
+    ...cart,
+    {
+      ...product,
+      quantity: 1,
+    },
+  ]);
+
+  playSuccess();
+}
+
+
+ function playBeep() {
+  new Audio("/sounds/beep.mp3").play().catch(() => {});
+}
+
+function playError() {
+  new Audio("/sounds/error.mp3").play().catch(() => {});
+}
+
+function playSuccess() {
+  new Audio("/sounds/success.mp3").play().catch(() => {});
+}
+
+
+function focusBarcode() {
+  setTimeout(() => {
+    barcodeRef.current?.focus();
+  }, 100);
+}
+
+
+
+
+
+function showToast(
+  message: string,
+  type: "success" | "error" = "success"
+) {
+  setToast({
+    show: true,
+    message,
+    type,
+  });
+
+  setTimeout(() => {
+    setToast({
+      show: false,
+      message: "",
+      type: "success",
+    });
+  }, 2500);
+}
+
+  async function scanBarcode(code: string) {
+  const cleanCode = code.trim();
+
+  if (!cleanCode) return;
+
+  try {
+    const response = await fetch(
+      `/api/products/barcode/${encodeURIComponent(cleanCode)}`
+    );
+
+    if (!response.ok) {
+      showToast(
+        `Unknown barcode: ${cleanCode}`,
+        "error"
+      );
+
+      setBarcode("");
+      barcodeRef.current?.focus();
+
+      return;
+    }
+
+    const product = await response.json();
+
+    addToCart(product);
+
+    playBeep();
+
+    setBarcode("");
+
+    barcodeRef.current?.focus();
+
+    focusBarcode();
+
+  } catch (error) {
+    console.error(error);
+
+    showToast(
+      "Barcode scan failed.",
+      "error"
+    );
+
+    playError();
+
+  }
+}
+  function increaseQty(id: string) {
+  setCart((currentCart) =>
+    currentCart.map((item) => {
+
+      if (item.id !== id) return item;
+
+      const stock =
+        item.inventory?.[0]?.quantity ?? 0;
+
+      if (item.quantity >= stock) {
+        playError();
+
+        showToast(
+          `Only ${stock} ${item.name} available.`,
+          "error"
+        );
+
+        return item;
+      }
+
+      return {
+        ...item,
+        quantity: item.quantity + 1,
+      };
+
+    })
+  );
+}
 
   function decreaseQty(id: string) {
     setCart(
@@ -166,66 +319,93 @@ function formatMpesaPhone(phone: string) {
 
   async function completeSale() {
 
-    if (paymentMethod === "MPESA") {
-  setShowMpesaModal(true);
-  return;
-}
-    if (
-      paymentMethod === "CREDIT" &&
-      !customerId
-    ) {
-      alert(
-        "Select a customer before making a credit sale."
-      );
-      return;
-    }
-
-    if (cart.length === 0) {
-      alert("Cart is empty.");
-      return;
-    }
-
-    console.log("Current user:", user);
-    console.log("Store ID:", user?.storeId);
-
-    try {
-      const response = await fetch("/api/sales", {
-        method: "POST",
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-        body: JSON.stringify({
-          storeId: user.storeId,
-cashierId: user.id,
-          customerId:
-            customerId || null,
-          paymentMethod,
-          items: cart.map((item) => ({
-            productId: item.id,
-            quantity: item.quantity,
-            price: Number(item.price),
-          })),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          "Failed to complete sale"
-        );
-      }
-
-      const sale = await response.json();
-
-      setCart([]);
-
-      window.location.href = `/receipt/${sale.id}`;
-    } catch (error) {
-      console.error(error);
-      alert("Failed to complete sale");
-    }
+  if (paymentMethod === "MPESA") {
+    setShowMpesaModal(true);
+    return;
   }
 
+  if (
+    paymentMethod === "CREDIT" &&
+    !customerId
+  ) {
+    playError();
+
+    showToast(
+      "Select a customer before making a credit sale.",
+      "error"
+    );
+
+    return;
+  }
+
+  if (cart.length === 0) {
+    playError();
+
+    showToast(
+      "Cart is empty.",
+      "error"
+    );
+
+    return;
+  }
+
+  try {
+
+    const response = await fetch("/api/sales", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        storeId: user.storeId,
+        cashierId: user.id,
+        customerId: customerId || null,
+        paymentMethod,
+        items: cart.map((item) => ({
+          productId: item.id,
+          quantity: item.quantity,
+          price: Number(item.price),
+        })),
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      playError();
+
+      showToast(
+        data.error || "Failed to complete sale.",
+        "error"
+      );
+
+      return;
+    }
+
+    playSuccess();
+
+    showToast(
+      "Sale completed successfully.",
+      "success"
+    );
+
+    setCart([]);
+
+    setTimeout(() => {
+      window.location.href = `/receipt/${data.id}`;
+    }, 500);
+
+  } catch (error) {
+    console.error(error);
+
+    playError();
+
+    showToast(
+      "Failed to complete sale.",
+      "error"
+    );
+  }
+}
 async function sendStkPush() {
   const phone = formatMpesaPhone(mpesaPhone);
 
@@ -270,8 +450,34 @@ async function sendStkPush() {
         <div>
 
           <h2 className="font-bold text-xl mb-4">
-            Products
-          </h2>
+  Products
+</h2>
+
+<input
+  ref={barcodeRef}
+  type="text"
+  placeholder="Scan barcode..."
+  value={barcode}
+  onChange={(e) => {
+    const value = e.target.value;
+    setBarcode(value);
+
+    if (value.length >= 8) {
+      setTimeout(() => {
+        scanBarcode(value);
+      }, 50);
+    }
+  }}
+  onKeyDown={(e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      scanBarcode(barcode);
+    }
+  }}
+  className="border p-2 rounded w-full mb-3"
+/>
+
+
 
           <input
             type="text"
@@ -283,43 +489,75 @@ async function sendStkPush() {
             }
           />
 
-          <div className="space-y-2">
+          
 
-            {filteredProducts.length === 0 && (
-              <div className="text-gray-500 text-center border rounded p-4">
-                No products found
-              </div>
-            )}
+           {search.trim() !== "" && (
 
-            {filteredProducts.map(
-              (product: any) => (
+  <div className="border rounded-lg max-h-96 overflow-y-auto">
 
-                <button
-                  key={product.id}
-                  onClick={() =>
-                    addToCart(product)
-                  }
-                  className="w-full border p-3 rounded text-left hover:bg-gray-100"
-                >
-                  <div className="font-semibold">
-                    {product.name}
-                  </div>
+    {filteredProducts.length === 0 ? (
 
-                  <div>
-                    KES{" "}
-                    {Number(
-                      product.price
-                    ).toLocaleString()}
-                  </div>
+      <div className="p-4 text-gray-500">
+        No matching products
+      </div>
 
-                </button>
+    ) : (
 
-              )
-            )}
+      filteredProducts.map((product: any) => (
 
+        <button
+          key={product.id}
+          disabled={
+            (product.inventory?.[0]?.quantity ?? 0) <= 0
+          }
+          onClick={() => {
+  addToCart(product);
+  setSearch("");
+  focusBarcode();
+}}
+          className={`w-full border-b p-3 text-left ${
+            (product.inventory?.[0]?.quantity ?? 0) <= 0
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "hover:bg-gray-100"
+          }`}
+        >
+          <div className="font-semibold">
+            {product.name}
           </div>
 
-        </div>
+          <div>
+            KES {Number(product.price).toLocaleString()}
+          </div>
+
+          <div
+            className={`text-sm ${
+              (product.inventory?.[0]?.quantity ?? 0) <= 5
+                ? "text-red-600"
+                : "text-green-600"
+            }`}
+          >
+            Stock: {product.inventory?.[0]?.quantity ?? 0}
+          </div>
+
+        </button>
+
+      ))
+
+    )}
+
+  </div>
+
+)}
+
+              
+</div>
+                 
+
+               
+
+              
+
+         
 
         {/* CART */}
 
@@ -526,6 +764,12 @@ async function sendStkPush() {
         </div>
 
       </div>
+
+ <Toast
+        show={toast.show}
+        message={toast.message}
+        type={toast.type}
+      />
 
     </div>
   );
