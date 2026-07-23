@@ -207,6 +207,7 @@ model StoreSettings {
 defaultPaymentMethod String @default("CASH")
 requireFullPayment   Boolean @default(true)
 
+
 // M-Pesa Settings
 mpesaEnvironment     String  @default("sandbox")
 mpesaShortcode       String?
