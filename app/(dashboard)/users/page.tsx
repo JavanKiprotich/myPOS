@@ -1,20 +1,29 @@
 "use client";
 
+type User = {
+  id: string;
+  name: string;
+  email: string;
+  role: "ADMIN" | "MANAGER" | "CASHIER";
+  active: boolean;
+};
+
 import { useEffect, useState } from "react";
 import PageHeader from "@/components/ui/PageHeader";
 import UserModal from "@/components/users/UserModal";
 import PinVerificationModal from "@/components/modals/PinVerificationModal";
 
 export default function UsersPage() {
-  const [users, setUsers] = useState([]);
-  const [search, setSearch] = useState("");
+ const [users, setUsers] = useState<User[]>([]);
+const [editingUser, setEditingUser] = useState<User | null>(null);
+const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   
 
-  const [editingUser, setEditingUser] = useState(null);
+  
 const [showModal, setShowModal] = useState(false);
 const [showPinModal, setShowPinModal] = useState(false);
-const [selectedUserId, setSelectedUserId] = useState(null);
+
 const [verifyingPin, setVerifyingPin] = useState(false);
 
 
@@ -35,9 +44,10 @@ const [verifyingPin, setVerifyingPin] = useState(false);
     }
   }
 
-
-  function handleDelete(id) {
+function handleDelete(id: string) {
   const user = users.find((u) => u.id === id);
+
+  if (!user) return;
 
   const confirmed = window.confirm(
     user.active
@@ -51,8 +61,7 @@ const [verifyingPin, setVerifyingPin] = useState(false);
   setShowPinModal(true);
 }
 
-
-async function verifyPin(pin) {
+async function verifyPin(pin: string) {
   try {
     setVerifyingPin(true);
 
@@ -103,7 +112,7 @@ async function verifyPin(pin) {
   }
 }
 
-  const filteredUsers = users.filter((user) => {
+  const filteredUsers = users.filter((user: User) => {
     const term = search.toLowerCase();
 
     return (
