@@ -17,7 +17,7 @@ export default function UsersPage() {
  const [users, setUsers] = useState<User[]>([]);
 const [editingUser, setEditingUser] = useState<User | null>(null);
 const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-
+const [search, setSearch] = useState("");
   
 
   
