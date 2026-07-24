@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Toast from "@/components/ui/Toast";
+import ProductPanel from "./components/ProductPanel";
+import MpesaModal from "./components/MpesaModal";
 
 import {
   playBeep,
@@ -431,13 +433,13 @@ async function sendStkPush() {
 }
   
   return (
-    <div className="p-6">
+    <div className="min-h-screen bg-gray-50 p-3 lg:p-6">
 
-      <h1 className="text-3xl font-bold mb-6">
+      <h1 className="text-2xl lg:text-3xl font-bold mb-2">
         Liquor POS
       </h1>
        {user && (
-      <p className="text-gray-600">
+      <p className="text-sm lg:text-base text-gray-600 mb-4">
         Welcome, {user.name} ({user.role})
       </p>
     )}
@@ -445,135 +447,39 @@ async function sendStkPush() {
 
       <div className="grid grid-cols-2 gap-6">
 
-        {/* PRODUCTS */}
-
-        <div>
-
-          <h2 className="font-bold text-xl mb-4">
-  Products
-</h2>
-
-<input
-  ref={barcodeRef}
-  type="text"
-  placeholder="Scan barcode..."
-  value={barcode}
-  onChange={(e) => {
-    const value = e.target.value;
-    setBarcode(value);
-
-    if (value.length >= 8) {
-      setTimeout(() => {
-        scanBarcode(value);
-      }, 50);
-    }
-  }}
-  onKeyDown={(e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      scanBarcode(barcode);
-    }
-  }}
-  className="border p-2 rounded w-full mb-3"
+       <ProductPanel
+  barcode={barcode}
+  setBarcode={setBarcode}
+  barcodeRef={barcodeRef}
+  scanBarcode={scanBarcode}
+  search={search}
+  setSearch={setSearch}
+  filteredProducts={filteredProducts}
+  addToCart={addToCart}
+  focusBarcode={focusBarcode}
 />
 
-
-
-          <input
-            type="text"
-            placeholder="Search product..."
-            className="border p-2 rounded w-full mb-4"
-            value={search}
-            onChange={(e) =>
-              setSearch(e.target.value)
-            }
-          />
-
-          
-
-           {search.trim() !== "" && (
-
-  <div className="border rounded-lg max-h-96 overflow-y-auto">
-
-    {filteredProducts.length === 0 ? (
-
-      <div className="p-4 text-gray-500">
-        No matching products
-      </div>
-
-    ) : (
-
-      filteredProducts.map((product: any) => (
-
-        <button
-          key={product.id}
-          disabled={
-            (product.inventory?.[0]?.quantity ?? 0) <= 0
-          }
-          onClick={() => {
-  addToCart(product);
-  setSearch("");
-  focusBarcode();
-}}
-          className={`w-full border-b p-3 text-left ${
-            (product.inventory?.[0]?.quantity ?? 0) <= 0
-              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-              : "hover:bg-gray-100"
-          }`}
-        >
-          <div className="font-semibold">
-            {product.name}
-          </div>
-
-          <div>
-            KES {Number(product.price).toLocaleString()}
-          </div>
-
-          <div
-            className={`text-sm ${
-              (product.inventory?.[0]?.quantity ?? 0) <= 5
-                ? "text-red-600"
-                : "text-green-600"
-            }`}
-          >
-            Stock: {product.inventory?.[0]?.quantity ?? 0}
-          </div>
-
-        </button>
-
-      ))
-
-    )}
-
-  </div>
-
-)}
-
-              
-</div>
-                 
-
-               
+{/* CART */}
 
               
 
          
 
-        {/* CART */}
+       {/* CART */}
 
-        <div>
+<div className="lg:col-span-3 flex flex-col">
 
           <h2 className="font-bold text-xl mb-4">
             Cart
           </h2>
 
-          <div className="space-y-3">
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
 
             {cart.map((item: any) => (
 
               <div
                 key={item.id}
-                className="border p-3 rounded"
+               className="border rounded-lg px-4 py-2 text-lg"
               >
 
                 <div className="font-semibold">
@@ -586,7 +492,7 @@ async function sendStkPush() {
                     onClick={() =>
                       decreaseQty(item.id)
                     }
-                    className="border px-3 py-1"
+                    className="border rounded-lg px-4 py-2 text-lg"
                   >
                     -
                   </button>
@@ -599,7 +505,7 @@ async function sendStkPush() {
                     onClick={() =>
                       increaseQty(item.id)
                     }
-                    className="border px-3 py-1"
+                    className="border rounded-lg px-4 py-2 text-lg"
                   >
                     +
                   </button>
@@ -608,7 +514,7 @@ async function sendStkPush() {
                     onClick={() =>
                       removeItem(item.id)
                     }
-                    className="border px-3 py-1 ml-auto text-red-600"
+                    className="border rounded-lg px-4 py-2 ml-auto text-red-600"
                   >
                     Remove
                   </button>
@@ -629,14 +535,14 @@ async function sendStkPush() {
 
           </div>
 
-          <div className="mt-6">
+          <div className="sticky bottom-0 bg-white border-t pt-4 mt-6">
 
             <label className="block mb-2 font-medium">
               Customer
             </label>
 
             <select
-              className="border p-2 w-full"
+              className="w-full border rounded-lg p-3"
               value={customerId}
               onChange={(e) =>
                 setCustomerId(
@@ -692,63 +598,29 @@ async function sendStkPush() {
 
           </div>
 
-          <div className="mt-6 text-3xl font-bold">
-            Total: KES{" "}
-            {total.toLocaleString()}
+         <div className="mt-6">
+           <div className="text-gray-500">
+  TOTAL
+</div>
 
-{showMpesaModal && (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+<div className="text-4xl lg:text-5xl font-bold">
+  KES {total.toLocaleString()}
+</div>
 
-    <div className="bg-white rounded-lg shadow-xl w-96 p-6">
-
-      <h2 className="text-2xl font-bold mb-4">
-        M-PESA Payment
-      </h2>
-
-      <label className="block mb-2 font-medium">
-        Customer Phone Number
-      </label>
-
-      <input
-        type="text"
-        placeholder="07XXXXXXXX"
-        value={mpesaPhone}
-        onChange={(e) => setMpesaPhone(e.target.value)}
-        className="w-full border rounded p-3 mb-4"
-      />
-
-      <div className="text-lg font-semibold mb-6">
-        Amount: KES {total.toLocaleString()}
-      </div>
-
-      <div className="flex gap-3">
-
-        <button
-          onClick={() => setShowMpesaModal(false)}
-          className="flex-1 border rounded py-3"
-        >
-          Cancel
-        </button>
-
-        <button
-  onClick={sendStkPush}
-  className="flex-1 bg-green-600 text-white rounded py-3"
->
-  Send STK Push
-</button>
-
-      </div>
-
-    </div>
-
-  </div>
-)}
+<MpesaModal
+  show={showMpesaModal}
+  total={total}
+  mpesaPhone={mpesaPhone}
+  setMpesaPhone={setMpesaPhone}
+  onCancel={() => setShowMpesaModal(false)}
+  onSend={sendStkPush}
+/>
 
           </div>
 
           <button
             onClick={completeSale}
-            className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white py-3 rounded font-semibold"
+           className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl text-xl font-bold"
           >
             Complete Sale
           </button>
