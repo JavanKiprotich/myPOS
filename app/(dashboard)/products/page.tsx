@@ -1,11 +1,23 @@
 "use client";
 
+type Product = {
+  id: string;
+  name: string;
+  sku: string;
+  barcode: string | null;
+  category: string;
+  unit: string;
+  costPrice: number;
+  sellingPrice: number;
+  stock: number;
+};
+
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import ProductCard from "./components/ProductCard";
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -29,7 +41,7 @@ export default function ProductsPage() {
     }
   }
 
-  async function deleteProduct(id) {
+ async function deleteProduct(id: string) {
     if (!confirm("Delete this product?")) return;
 
     try {
