@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+
 import "./globals.css";
 import ServiceWorker from "@/components/ServiceWorker";
+import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
   title: "Liquor POS",
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   themeColor: "#2563eb",
 };
 
