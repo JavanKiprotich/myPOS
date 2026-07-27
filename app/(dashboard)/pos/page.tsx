@@ -629,11 +629,10 @@ async function sendStkPush() {
     <div className="bg-white rounded-xl p-6 w-full max-w-md">
 
       <CameraScanner
-        onScan={(barcode) => {
-          scanBarcode(barcode);
-          setShowScanner(false);
-        }}
-      />
+  onScan={(barcode) => {
+    scanBarcode(barcode);
+  }}
+/>
 
       <button
         onClick={() => setShowScanner(false)}
@@ -674,12 +673,11 @@ async function sendStkPush() {
 
     <div className="bg-white rounded-xl p-6 w-full max-w-md">
 
-      <CameraScanner
-        onScan={(barcode) => {
-          scanBarcode(barcode);
-          setShowScanner(false);
-        }}
-      />
+     <CameraScanner
+  onScan={(barcode) => {
+    scanBarcode(barcode);
+  }}
+/>
 
       <button
         onClick={() => setShowScanner(false)}

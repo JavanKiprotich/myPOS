@@ -1,35 +1,79 @@
 "use client";
 
-import { Html5QrcodeScanner } from "html5-qrcode";
-import { useEffect } from "react";
+import { BrowserMultiFormatReader } from "@zxing/browser";
+import { useEffect, useRef } from "react";
 
 type Props = {
   onScan: (barcode: string) => void;
 };
 
 export default function CameraScanner({ onScan }: Props) {
-  useEffect(() => {
-    const scanner = new Html5QrcodeScanner(
-      "reader",
-      {
-        fps: 10,
-        qrbox: 250,
-      },
-      false
-    );
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-    scanner.render(
-      (decodedText) => {
-        scanner.clear();
-        onScan(decodedText);
-      },
-      () => {}
-    );
+  useEffect(() => {
+    const reader = new BrowserMultiFormatReader();
+    let controls: any;
+
+    async function startScanner() {
+      try {
+        // Get available cameras
+        const devices =
+          await BrowserMultiFormatReader.listVideoInputDevices();
+
+        if (devices.length === 0) {
+          alert("No camera found.");
+          return;
+        }
+
+        // Prefer rear camera on phones
+        const preferredCamera =
+          devices.find((device) =>
+            device.label.toLowerCase().includes("back")
+          ) || devices[0];
+
+        // Start scanning
+        controls = await reader.decodeFromVideoDevice(
+          preferredCamera.deviceId,
+          videoRef.current!,
+          (result) => {
+            if (result) {
+              const barcode = result.getText();
+
+              // Stop scanner
+              controls.stop();
+
+              // Return scanned barcode
+              onScan(barcode);
+            }
+          }
+        );
+      } catch (error) {
+        console.error("Scanner Error:", error);
+      }
+    }
+
+    startScanner();
 
     return () => {
-      scanner.clear().catch(() => {});
+      try {
+        controls?.stop();
+      } catch {}
+
+      try {
+        reader.reset();
+      } catch {}
     };
   }, [onScan]);
 
-  return <div id="reader" />;
+  return (
+    <div className="w-full">
+      <video
+        ref={videoRef}
+        className="w-full h-80 object-cover rounded-lg border"
+        autoPlay
+        playsInline
+        muted
+      />
+    </div>
+  );
 }
