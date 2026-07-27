@@ -55,14 +55,12 @@ export default function CameraScanner({ onScan }: Props) {
     startScanner();
 
     return () => {
-      try {
-        controls?.stop();
-      } catch {}
-
-      try {
-        reader.reset();
-      } catch {}
-    };
+  try {
+    controls?.stop();
+  } catch (error) {
+    console.error(error);
+  }
+};
   }, [onScan]);
 
   return (
