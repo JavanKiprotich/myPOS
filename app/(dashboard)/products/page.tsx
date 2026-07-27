@@ -1,232 +1,143 @@
 "use client";
 
-import { useState } from "react";
-import Toast from "@/components/ui/Toast";
-
-import {
-  playBeep,
-  playError,
-  playSuccess,
-} from "@/lib/sounds";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import ProductCard from "./components/ProductCard";
 
 export default function ProductsPage() {
-  const [form, setForm] = useState({
-    name: "",
-    sku: "",
-    category: "",
-    unit: "",
-    price: "",
-    barcode: "",
-  });
+  const [products, setProducts] = useState([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
 
-function showToast(
-  message: string,
-  type: "success" | "error" = "success"
-) {
-  setToast({
-    show: true,
-    message,
-    type,
-  });
+  useEffect(() => {
+    loadProducts();
+  }, []);
 
-  setTimeout(() => {
-    setToast({
-      show: false,
-      message: "",
-      type: "success",
-    });
-  }, 2500);
-}
+  async function loadProducts() {
+    try {
+      setLoading(true);
 
-  const [toast, setToast] = useState({
-  show: false,
-  message: "",
-  type: "success" as "success" | "error",
-});
+      const response = await fetch("/api/products");
 
-function playBeep() {
-  const audio = new Audio("/sounds/beep.mp3");
-  audio.play().catch(() => {});
-}
+      const data = await response.json();
 
-function playError() {
-  new Audio("/sounds/error.mp3").play().catch(() => {});
-}
-
-function playSuccess() {
-  new Audio("/sounds/success.mp3").play().catch(() => {});
-}
-
- async function handleSubmit(e: React.FormEvent) {
-  e.preventDefault();
-
-  try {
-    const response = await fetch("/api/products", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        ...form,
-        price: Number(form.price),
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      showToast(
-        data.error || "Failed to add product.",
-        "error"
-      );
-playError();
-
-      return;
+      setProducts(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
-
-     
-
-    showToast(
-      "Product added successfully.",
-      "success"
-    );
-
-    playSuccess();
-
-    setForm({
-      name: "",
-      sku: "",
-      category: "",
-      unit: "",
-      price: "",
-      barcode: "",
-    });
-
-  } catch (error) {
-    console.error(error);
-
-    showToast(
-      "Something went wrong.",
-      "error"
-    );
-playError();
-
   }
-}
 
+  async function deleteProduct(id) {
+    if (!confirm("Delete this product?")) return;
+
+    try {
+      const response = await fetch(`/api/products/${id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        loadProducts();
+      } else {
+        alert("Failed to delete product.");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      return (
+        product.name
+          .toLowerCase()
+          .includes(search.toLowerCase()) ||
+        product.sku
+          .toLowerCase()
+          .includes(search.toLowerCase()) ||
+        (product.barcode || "").includes(search)
+      );
+    });
+  }, [products, search]);
 
   return (
-    <div className="max-w-xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">
-        Add Product
-      </h1>
+    <div className="space-y-8">
 
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4"
-      >
-        <input
-          className="border p-2 w-full"
-          placeholder="Product Name"
-          value={form.name}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              name: e.target.value,
-            })
-          }
-        />
-
-        <input
-          className="border p-2 w-full"
-          placeholder="SKU"
-          value={form.sku}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              sku: e.target.value,
-            })
-          }
-        />
-
+      <div className="flex items-center justify-between">
 
         <div>
-  
 
-  <div>
-  <label className="mb-1 block text-sm font-medium">
-    Barcode
-  </label>
+          <h1 className="text-3xl font-bold">
+            Products
+          </h1>
 
-  <input
-    type="text"
-    className="w-full rounded-lg border p-3"
-    value={form.barcode}
-    onChange={(e) =>
-      setForm({
-        ...form,
-        barcode: e.target.value,
-      })
-    }
-    placeholder="Scan or enter barcode"
-    autoComplete="off"
-    autoFocus
-  />
-</div>
-</div>
-        <input
-          className="border p-2 w-full"
-          placeholder="Category"
-          value={form.category}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              category: e.target.value,
-            })
-          }
-        />
+          <p className="text-gray-500">
+            Manage your inventory.
+          </p>
 
-        
+        </div>
 
-        <input
-          className="border p-2 w-full"
-          placeholder="Unit"
-          value={form.unit}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              unit: e.target.value,
-            })
-          }
-        />
-
-        <input
-          type="number"
-          className="border p-2 w-full"
-          placeholder="Price"
-          value={form.price}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              price: e.target.value,
-            })
-          }
-        />
-
-        <button
-          className="bg-black text-white px-4 py-2 rounded"
-          type="submit"
+        <Link
+          href="/products/new"
+          className="bg-blue-600 text-white px-5 py-3 rounded-lg hover:bg-blue-700"
         >
-          Save Product
-        </button>
-      </form>
+          + Add Product
+        </Link>
 
+      </div>
 
-      <Toast
-  show={toast.show}
-  message={toast.message}
-  type={toast.type}
-/>
+      <input
+        type="text"
+        placeholder="Search by name, SKU or barcode..."
+        value={search}
+        onChange={(e) =>
+          setSearch(e.target.value)
+        }
+        className="border rounded-xl p-4 w-full"
+      />
+
+      {loading ? (
+        <div className="text-center py-20">
+          Loading products...
+        </div>
+      ) : filteredProducts.length === 0 ? (
+        <div className="bg-white rounded-xl shadow p-12 text-center">
+
+          <div className="text-6xl mb-4">
+            📦
+          </div>
+
+          <h2 className="text-xl font-semibold">
+            No products found
+          </h2>
+
+          <p className="text-gray-500 mt-2">
+            Start by adding your first product.
+          </p>
+
+          <Link
+            href="/products/new"
+            className="inline-block mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg"
+          >
+            Add Product
+          </Link>
+
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+          {filteredProducts.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              onDelete={deleteProduct}
+            />
+          ))}
+
+        </div>
+      )}
+
     </div>
   );
 }

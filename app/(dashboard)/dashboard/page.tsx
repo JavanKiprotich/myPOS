@@ -70,7 +70,7 @@ export default function DashboardPage() {
         />
 
         <QuickAction
-          href="/products"
+          href="/products/new"
           color="bg-green-600"
           icon="🍾"
           title="Products"
