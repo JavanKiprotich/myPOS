@@ -64,14 +64,18 @@ export default function CameraScanner({ onScan }: Props) {
   }, [onScan]);
 
   return (
-    <div className="w-full">
-      <video
-        ref={videoRef}
-        className="w-full h-80 object-cover rounded-lg border"
-        autoPlay
-        playsInline
-        muted
-      />
-    </div>
+
+    
+   <div className="relative overflow-hidden rounded-xl border">
+  <video
+    ref={videoRef}
+    className="w-full"
+    muted
+    playsInline
+  />
+
+  <div className="scanner-line"></div>
+  <div className="absolute inset-0 border-4 border-green-500 rounded-xl pointer-events-none"></div>
+</div>
   );
 }
