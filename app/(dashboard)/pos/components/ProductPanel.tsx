@@ -1,27 +1,33 @@
 "use client";
 
 type ProductPanelProps = {
-  barcode: string;
+   barcode: string;
   setBarcode: (value: string) => void;
   barcodeRef: React.RefObject<HTMLInputElement | null>;
   scanBarcode: (barcode: string) => void;
+  focusBarcode: () => void;
   search: string;
   setSearch: (value: string) => void;
   filteredProducts: any[];
   addToCart: (product: any) => void;
-  focusBarcode: () => void;
+
+  onOpenCamera: () => void;
 };
+
+
 
 export default function ProductPanel({
   barcode,
   setBarcode,
   barcodeRef,
   scanBarcode,
+  focusBarcode,
   search,
   setSearch,
   filteredProducts,
   addToCart,
-  focusBarcode,
+
+  onOpenCamera,
 }: ProductPanelProps) {
   return (
    <div className="lg:col-span-2 flex flex-col min-h-0">
@@ -29,6 +35,13 @@ export default function ProductPanel({
       <h2 className="font-bold text-xl mb-4">
         Products
       </h2>
+
+    <button
+  onClick={onOpenCamera}
+  className="w-full mb-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-3 font-semibold"
+>
+  📷 Scan With Camera
+</button>
 
       <input
         ref={barcodeRef}

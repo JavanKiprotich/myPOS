@@ -17,138 +17,323 @@ export default function DashboardPage() {
   }
 
   if (!dashboard) {
-    return <p>Loading dashboard...</p>;
+    return (
+      <div className="flex items-center justify-center h-[70vh]">
+        <p className="text-gray-500 text-lg">
+          Loading dashboard...
+        </p>
+      </div>
+    );
   }
 
   return (
-    <div>
+    <div className="space-y-8">
 
-      <h1 className="text-3xl font-bold mb-8">
-        Dashboard
-      </h1>
+      {/* HEADER */}
 
-      {/* QUICK ACTIONS */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
 
-      <div className="grid grid-cols-4 gap-4 mb-8">
+        <div>
 
-        <Link
-          href="/pos"
-          className="bg-blue-600 text-white rounded-lg p-5 hover:bg-blue-700 transition"
-        >
-          <div className="text-3xl mb-2">🛒</div>
-          <div className="font-semibold">
-            New Sale
-          </div>
-        </Link>
+          <h1 className="text-4xl font-bold">
+            Dashboard
+          </h1>
 
-        <Link
-          href="/products"
-          className="bg-green-600 text-white rounded-lg p-5 hover:bg-green-700 transition"
-        >
-          <div className="text-3xl mb-2">🍾</div>
-          <div className="font-semibold">
-            Add Product
-          </div>
-        </Link>
+          <p className="text-gray-500 mt-1">
+            Welcome back. Here's today's business summary.
+          </p>
 
-        <Link
-          href="/inventory"
-          className="bg-orange-500 text-white rounded-lg p-5 hover:bg-orange-600 transition"
-        >
-          <div className="text-3xl mb-2">📦</div>
-          <div className="font-semibold">
-            Stock In
-          </div>
-        </Link>
+        </div>
 
-        <Link
-          href="/expenses"
-          className="bg-red-600 text-white rounded-lg p-5 hover:bg-red-700 transition"
-        >
-          <div className="text-3xl mb-2">🧾</div>
-          <div className="font-semibold">
-            Record Expense
-          </div>
-        </Link>
+        <div className="text-gray-500 mt-3 lg:mt-0">
+          {new Date().toLocaleDateString()}
+        </div>
 
       </div>
 
-      {/* STATISTICS */}
+      {/* QUICK ACTIONS */}
 
-      <div className="grid grid-cols-4 gap-6 mb-10">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
-        <Card
+        <QuickAction
+          href="/pos"
+          color="bg-blue-600"
+          icon="🛒"
+          title="New Sale"
+        />
+
+        <QuickAction
+          href="/inventory"
+          color="bg-orange-500"
+          icon="📦"
+          title="Inventory"
+        />
+
+        <QuickAction
+          href="/products"
+          color="bg-green-600"
+          icon="🍾"
+          title="Products"
+        />
+
+        <QuickAction
+          href="/customers"
+          color="bg-purple-600"
+          icon="👥"
+          title="Customers"
+        />
+
+      </div>
+
+      {/* KPI CARDS */}
+
+      <div className="grid grid-cols-2 xl:grid-cols-3 gap-6">
+
+        <StatCard
           title="Today's Sales"
           value={`KES ${dashboard.todaySales}`}
           color="bg-green-500"
         />
 
-        <Card
-          title="Products"
-          value={dashboard.totalProducts}
+        <StatCard
+          title="Transactions"
+          value={dashboard.todayTransactions ?? 0}
           color="bg-blue-500"
         />
 
-        <Card
+        <StatCard
+          title="Products"
+          value={dashboard.totalProducts}
+          color="bg-indigo-500"
+        />
+
+        <StatCard
           title="Customers"
           value={dashboard.totalCustomers}
           color="bg-purple-500"
         />
 
-        <Card
+        <StatCard
           title="Outstanding Credit"
           value={`KES ${dashboard.outstandingCredit}`}
           color="bg-red-500"
         />
 
+        <StatCard
+          title="Inventory Value"
+          value={`KES ${dashboard.inventoryValue ?? 0}`}
+          color="bg-amber-500"
+        />
+
       </div>
 
-      <div className="grid grid-cols-2 gap-8">
+      {/* CHART + PAYMENT */}
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
 
         <div className="bg-white rounded-xl shadow p-6">
 
-          <h2 className="text-xl font-bold mb-4">
-            Recent Sales
+          <h2 className="text-xl font-bold mb-5">
+            Weekly Sales
           </h2>
 
-          {dashboard.recentSales.map((sale: any) => (
-            <div
-              key={sale.id}
-              className="flex justify-between border-b py-3"
-            >
-              <span>
-                {sale.customer?.name || "Walk-in"}
-              </span>
-
-              <span className="font-semibold">
-                KES {sale.total}
-              </span>
-            </div>
-          ))}
+          <div className="h-72 flex items-center justify-center border-2 border-dashed rounded-lg text-gray-400">
+            Sales chart coming soon
+          </div>
 
         </div>
 
         <div className="bg-white rounded-xl shadow p-6">
 
-          <h2 className="text-xl font-bold mb-4">
-            Low Stock
+          <h2 className="text-xl font-bold mb-5">
+            Payment Breakdown
+          </h2>
+
+          <div className="space-y-4">
+
+            <PaymentRow
+              label="Cash"
+              value={dashboard.cashSales ?? 0}
+            />
+
+            <PaymentRow
+              label="M-Pesa"
+              value={dashboard.mpesaSales ?? 0}
+            />
+
+            <PaymentRow
+              label="Credit"
+              value={dashboard.creditSales ?? 0}
+            />
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* RECENT SALES */}
+
+      <div className="bg-white rounded-xl shadow p-6">
+
+        <div className="flex justify-between items-center mb-5">
+
+          <h2 className="text-xl font-bold">
+            Recent Sales
+          </h2>
+
+          <Link
+            href="/sales"
+            className="text-blue-600 hover:underline"
+          >
+            View All
+          </Link>
+
+        </div>
+
+        <div className="overflow-x-auto">
+
+          <table className="w-full">
+
+            <thead>
+
+              <tr className="border-b">
+
+                <th className="text-left py-3">
+                  Receipt
+                </th>
+
+                <th className="text-left py-3">
+                  Customer
+                </th>
+
+                <th className="text-left py-3">
+                  Payment
+                </th>
+
+                <th className="text-right py-3">
+                  Amount
+                </th>
+
+              </tr>
+
+            </thead>
+
+            <tbody>
+
+              {dashboard.recentSales.map((sale: any) => (
+
+                <tr
+                  key={sale.id}
+                  className="border-b hover:bg-gray-50"
+                >
+
+                  <td className="py-3 font-semibold">
+                    #{sale.id.slice(-6)}
+                  </td>
+
+                  <td>
+                    {sale.customer?.name ||
+                      "Walk-in"}
+                  </td>
+
+                  <td>
+                   {sale.payments?.[0]?.method ?? "N/A"}
+                  </td>
+
+                  <td className="text-right font-bold">
+                    KES {sale.total}
+                  </td>
+
+                </tr>
+
+              ))}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </div>
+
+      {/* BOTTOM */}
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+
+        <div className="bg-white rounded-xl shadow p-6">
+
+          <h2 className="text-xl font-bold mb-5">
+            Low Stock Alerts
           </h2>
 
           {dashboard.lowStock.length === 0 ? (
-            <p>No low stock products.</p>
+
+            <p className="text-green-600">
+              ✅ All products sufficiently stocked.
+            </p>
+
           ) : (
+
             dashboard.lowStock.map((item: any) => (
+
               <div
                 key={item.id}
                 className="flex justify-between border-b py-3"
               >
-                <span>{item.product.name}</span>
 
-                <span className="text-red-600 font-bold">
+                <span>
+                  {item.product.name}
+                </span>
+
+                <span className="font-bold text-red-600">
                   {item.quantity}
                 </span>
+
               </div>
+
             ))
+
+          )}
+
+        </div>
+
+        <div className="bg-white rounded-xl shadow p-6">
+
+          <h2 className="text-xl font-bold mb-5">
+            Top Selling Products
+          </h2>
+
+          {(dashboard.topProducts ?? []).length ===
+          0 ? (
+
+            <p className="text-gray-500">
+              No sales yet.
+            </p>
+
+          ) : (
+
+            dashboard.topProducts.map(
+              (product: any) => (
+
+                <div
+                  key={product.productId}
+                  className="flex justify-between border-b py-3"
+                >
+
+                  <span>
+                    {product.product.name}
+                  </span>
+
+                  <span className="font-bold">
+                    {product.quantity}
+                  </span>
+
+                </div>
+
+              )
+            )
+
           )}
 
         </div>
@@ -159,7 +344,29 @@ export default function DashboardPage() {
   );
 }
 
-function Card({
+function QuickAction({
+  href,
+  title,
+  icon,
+  color,
+}: any) {
+  return (
+    <Link
+      href={href}
+      className={`${color} text-white rounded-xl p-5 hover:opacity-90 transition shadow`}
+    >
+      <div className="text-4xl mb-3">
+        {icon}
+      </div>
+
+      <div className="font-semibold text-lg">
+        {title}
+      </div>
+    </Link>
+  );
+}
+
+function StatCard({
   title,
   value,
   color,
@@ -168,13 +375,30 @@ function Card({
     <div
       className={`${color} rounded-xl shadow text-white p-6`}
     >
-      <div className="text-sm opacity-90">
+      <div className="opacity-90 text-sm">
         {title}
       </div>
 
-      <div className="text-3xl font-bold mt-2">
+      <div className="text-3xl font-bold mt-3">
         {value}
       </div>
+    </div>
+  );
+}
+
+function PaymentRow({
+  label,
+  value,
+}: any) {
+  return (
+    <div className="flex justify-between border-b pb-3">
+
+      <span>{label}</span>
+
+      <span className="font-bold">
+        KES {value}
+      </span>
+
     </div>
   );
 }

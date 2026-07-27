@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Toast from "@/components/ui/Toast";
 import ProductPanel from "./components/ProductPanel";
 import MpesaModal from "./components/MpesaModal";
+import CameraScanner from "./components/CameraScanner";
+
 
 import {
   playBeep,
@@ -32,6 +34,9 @@ const [toast, setToast] = useState({
   message: "",
   type: "success" as "success" | "error",
 });
+
+const [showScanner, setShowScanner] = useState(false);
+
 
  useEffect(() => {
   loadUser();
@@ -457,6 +462,8 @@ async function sendStkPush() {
   filteredProducts={filteredProducts}
   addToCart={addToCart}
   focusBarcode={focusBarcode}
+
+   onOpenCamera={() => setShowScanner(true)}
 />
 
 {/* CART */}
@@ -616,6 +623,31 @@ async function sendStkPush() {
   onSend={sendStkPush}
 />
 
+{showScanner && (
+  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+
+    <div className="bg-white rounded-xl p-6 w-full max-w-md">
+
+      <CameraScanner
+        onScan={(barcode) => {
+          scanBarcode(barcode);
+          setShowScanner(false);
+        }}
+      />
+
+      <button
+        onClick={() => setShowScanner(false)}
+        className="w-full mt-4 border rounded-lg py-3"
+      >
+        Cancel
+      </button>
+
+    </div>
+
+  </div>
+)}
+
+
           </div>
 
           <button
@@ -636,6 +668,30 @@ async function sendStkPush() {
         </div>
 
       </div>
+
+      {showScanner && (
+  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+
+    <div className="bg-white rounded-xl p-6 w-full max-w-md">
+
+      <CameraScanner
+        onScan={(barcode) => {
+          scanBarcode(barcode);
+          setShowScanner(false);
+        }}
+      />
+
+      <button
+        onClick={() => setShowScanner(false)}
+        className="w-full mt-4 border rounded-lg py-3"
+      >
+        Cancel
+      </button>
+
+    </div>
+
+  </div>
+)}
 
  <Toast
         show={toast.show}
