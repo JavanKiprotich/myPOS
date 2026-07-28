@@ -38,7 +38,7 @@ export default function ProductPanel({
 
     <button
   onClick={onOpenCamera}
-  className="w-full mb-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-3 font-semibold"
+  className="w-full mb-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg py-3 font-semibold"
 >
   📷 Scan With Camera
 </button>
@@ -64,13 +64,19 @@ export default function ProductPanel({
             scanBarcode(barcode);
           }
         }}
-        className="border p-2 rounded w-full mb-3"
+        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 mb-3 outline-none transition
+focus:border-slate-500
+focus:ring-2
+focus:ring-slate-200"
       />
 
       <input
         type="text"
         placeholder="Search product..."
-        className="border p-2 rounded w-full mb-4"
+        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 mb-4 outline-none transition
+focus:border-slate-500
+focus:ring-2
+focus:ring-slate-200"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
@@ -98,29 +104,29 @@ export default function ProductPanel({
                   setSearch("");
                   focusBarcode();
                 }}
-                className={`w-full border-b p-3 text-left ${
-                  (product.inventory?.[0]?.quantity ?? 0) <= 0
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "hover:bg-gray-100"
-                }`}
+                className={`w-full text-left p-4 border-b border-slate-200 transition-colors ${
+  (product.inventory?.[0]?.quantity ?? 0) <= 0
+    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+    : "hover:bg-slate-50"
+}`}
               >
-                <div className="font-semibold">
+                <div className="text-base font-semibold text-slate-900">
                   {product.name}
                 </div>
 
-                <div>
+                <div className="mt-1 text-slate-700">
                   KES {Number(product.price).toLocaleString()}
                 </div>
 
-                <div
-                  className={`text-sm ${
-                    (product.inventory?.[0]?.quantity ?? 0) <= 5
-                      ? "text-red-600"
-                      : "text-green-600"
-                  }`}
-                >
-                  Stock: {product.inventory?.[0]?.quantity ?? 0}
-                </div>
+          <span
+  className={`inline-flex mt-2 rounded-full px-3 py-1 text-xs font-medium ${
+    (product.inventory?.[0]?.quantity ?? 0) <= 5
+      ? "bg-amber-100 text-amber-700"
+      : "bg-green-100 text-green-700"
+  }`}
+>
+  Stock: {product.inventory?.[0]?.quantity ?? 0}
+</span>
 
               </button>
 

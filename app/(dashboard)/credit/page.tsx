@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Card from "@/components/ui/Card";
 
 export default function CreditPage() {
   const [customers, setCustomers] = useState<any[]>([]);
@@ -60,73 +61,109 @@ export default function CreditPage() {
   );
 
   return (
-    <div className="max-w-xl">
-      <h1 className="text-3xl font-bold mb-6">
-        Credit Repayment
-      </h1>
+    <div className="space-y-8 max-w-3xl">
 
-      <div className="mb-5">
-        <label className="block mb-2 font-medium">
-          Customer
-        </label>
+      {/* Header */}
 
-        <select
-          className="border rounded p-2 w-full"
-          value={customerId}
-          onChange={(e) => setCustomerId(e.target.value)}
-        >
-          <option value="">
-            Select Customer
-          </option>
+      <div>
 
-          {customers.map((customer) => (
-            <option
-              key={customer.id}
-              value={customer.id}
+        <h1 className="text-3xl font-bold text-slate-900">
+          Credit Repayment
+        </h1>
+
+        <p className="mt-1 text-slate-500">
+          Record customer repayments and manage outstanding balances.
+        </p>
+
+      </div>
+
+      <Card className="p-6">
+
+        <div className="space-y-6">
+
+          {/* Customer */}
+
+          <div>
+
+            <label className="block mb-2 font-medium text-slate-700">
+              Customer
+            </label>
+
+            <select
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-200 outline-none"
+              value={customerId}
+              onChange={(e) => setCustomerId(e.target.value)}
             >
-              {customer.name}
-            </option>
-          ))}
-        </select>
-      </div>
+              <option value="">
+                Select Customer
+              </option>
 
-      {selectedCustomer && (
-        <div className="mb-5 rounded border bg-yellow-50 p-4">
-          <p className="text-lg">
-            Outstanding Balance:
-          </p>
+              {customers.map((customer) => (
+                <option
+                  key={customer.id}
+                  value={customer.id}
+                >
+                  {customer.name}
+                </option>
+              ))}
+            </select>
 
-          <p className="text-2xl font-bold text-red-600">
-            KES{" "}
-            {Number(
-              selectedCustomer.creditAccount?.balance || 0
-            ).toFixed(2)}
-          </p>
+          </div>
+
+          {/* Outstanding Balance */}
+
+          {selectedCustomer && (
+
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
+
+              <p className="text-sm text-slate-600">
+                Outstanding Balance
+              </p>
+
+              <h2 className="mt-2 text-4xl font-bold text-amber-700">
+                KES{" "}
+                {Number(
+                  selectedCustomer.creditAccount?.balance || 0
+                ).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                })}
+              </h2>
+
+            </div>
+
+          )}
+
+          {/* Repayment */}
+
+          <div>
+
+            <label className="block mb-2 font-medium text-slate-700">
+              Repayment Amount
+            </label>
+
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-200 outline-none"
+              placeholder="Enter amount"
+            />
+
+          </div>
+
+          {/* Button */}
+
+          <button
+            onClick={repayCredit}
+            className="rounded-xl bg-slate-900 px-6 py-3 font-medium text-white transition hover:bg-slate-800"
+          >
+            Record Repayment
+          </button>
+
         </div>
-      )}
 
-      <div className="mb-5">
-        <label className="block mb-2 font-medium">
-          Repayment Amount
-        </label>
+      </Card>
 
-        <input
-          type="number"
-          value={amount}
-          onChange={(e) =>
-            setAmount(e.target.value)
-          }
-          className="border rounded p-2 w-full"
-          placeholder="Enter amount"
-        />
-      </div>
-
-      <button
-        onClick={repayCredit}
-        className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded"
-      >
-        Record Repayment
-      </button>
     </div>
   );
 }

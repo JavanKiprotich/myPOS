@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Card from "@/components/ui/Card";
 
 export default function InventoryPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -114,201 +115,236 @@ export default function InventoryPage() {
   );
 
   return (
-    <div className="p-6">
+    <div className="space-y-8">
 
-      <h1 className="text-3xl font-bold mb-6">
-        Inventory Management
-      </h1>
+      {/* Header */}
 
-      <div className="border rounded p-4 mb-6">
+      <div>
 
-        <h2 className="text-xl font-semibold mb-4">
-          Stock Adjustment
-        </h2>
+        <h1 className="text-3xl font-bold text-slate-900">
+          Inventory
+        </h1>
 
-        <select
-          className="border p-2 w-full mb-3"
-          value={selectedItem}
-          onChange={(e) => setSelectedItem(e.target.value)}
-        >
-          <option value="">
-            Select Product
-          </option>
-
-          {products.map((product: any) => (
-            <option
-              key={product.id}
-              value={product.id}
-            >
-              {product.name}
-            </option>
-          ))}
-        </select>
-
-        <input
-          type="number"
-          className="border p-2 w-full mb-3"
-          placeholder="Quantity"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-        />
-
-        <input
-          className="border p-2 w-full mb-3"
-          placeholder="Reason (optional)"
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-        />
-
-        <div className="flex gap-4">
-          <button
-            onClick={stockIn}
-            className="bg-green-600 text-white px-4 py-2 rounded"
-          >
-            Stock In
-          </button>
-
-          <button
-            onClick={stockOut}
-            className="bg-red-600 text-white px-4 py-2 rounded"
-          >
-            Stock Out
-          </button>
-        </div>
-
-      </div>
-
-      <div className="border rounded p-4 mb-6 bg-gray-100">
-
-        <h2 className="text-xl font-semibold">
-          Total Stock Value
-        </h2>
-
-        <p className="text-2xl font-bold">
-          KES {totalValue.toLocaleString()}
+        <p className="mt-1 text-slate-500">
+          Manage stock levels and inventory movements.
         </p>
 
       </div>
 
-      <h2 className="text-xl font-semibold mb-3">
-        Current Inventory
-      </h2>
+      {/* Top Cards */}
 
-      <table className="w-full border mb-8">
+      <div className="grid lg:grid-cols-3 gap-6">
 
-        <thead>
+        <Card className="p-6 lg:col-span-2">
 
-          <tr className="bg-gray-100">
+          <h2 className="text-xl font-semibold mb-6">
+            Stock Adjustment
+          </h2>
 
-            <th className="border p-2">Product</th>
+          <select
+            className="w-full rounded-xl border border-slate-300 p-3 mb-4"
+            value={selectedItem}
+            onChange={(e) => setSelectedItem(e.target.value)}
+          >
+            <option value="">Select Product</option>
 
-            <th className="border p-2">Quantity</th>
+            {products.map((product: any) => (
+              <option
+                key={product.id}
+                value={product.id}
+              >
+                {product.name}
+              </option>
+            ))}
+          </select>
 
-            <th className="border p-2">Unit Price</th>
+          <input
+            type="number"
+            className="w-full rounded-xl border border-slate-300 p-3 mb-4"
+            placeholder="Quantity"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+          />
 
-            <th className="border p-2">Value</th>
+          <input
+            className="w-full rounded-xl border border-slate-300 p-3 mb-6"
+            placeholder="Reason (optional)"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
 
-          </tr>
+          <div className="flex gap-3">
 
-        </thead>
+            <button
+              onClick={stockIn}
+              className="rounded-xl bg-slate-900 px-5 py-3 text-white hover:bg-slate-800"
+            >
+              Stock In
+            </button>
 
-        <tbody>
+            <button
+              onClick={stockOut}
+              className="rounded-xl border border-red-200 px-5 py-3 text-red-600 hover:bg-red-50"
+            >
+              Stock Out
+            </button>
 
-          {inventory.map((item: any) => (
+          </div>
 
-            <tr key={item.id}>
+        </Card>
 
-              <td className="border p-2">
-                {item.product.name}
-              </td>
+        <Card className="p-6 flex flex-col justify-center">
 
-              <td className="border p-2">
+          <p className="text-slate-500">
+            Total Inventory Value
+          </p>
 
-                <span
-                  className={`px-3 py-1 rounded-full text-white font-bold ${
-                    item.quantity <= 5
-                      ? "bg-red-600"
-                      : "bg-green-600"
-                  }`}
-                >
-                  {item.quantity}
-                </span>
+          <h2 className="text-4xl font-bold mt-2">
+            KES {totalValue.toLocaleString()}
+          </h2>
 
-              </td>
+        </Card>
 
-              <td className="border p-2">
-                KES {Number(item.product.price)}
-              </td>
+      </div>
 
-              <td className="border p-2">
-                KES {(item.quantity * Number(item.product.price)).toLocaleString()}
-              </td>
+      {/* Inventory */}
 
-            </tr>
+      <Card className="overflow-hidden">
 
-          ))}
+        <div className="p-6 border-b border-slate-200">
 
-        </tbody>
+          <h2 className="text-xl font-semibold">
+            Current Inventory
+          </h2>
 
-      </table>
+        </div>
 
-      <h2 className="text-xl font-semibold mb-3">
-        Inventory Movement History
-      </h2>
+        <table className="w-full">
 
-      <table className="w-full border">
+          <thead className="bg-slate-50">
 
-        <thead>
+            <tr>
 
-          <tr className="bg-gray-100">
-
-            <th className="border p-2">Date</th>
-
-            <th className="border p-2">Product</th>
-
-            <th className="border p-2">Type</th>
-
-            <th className="border p-2">Quantity</th>
-
-            <th className="border p-2">Reason</th>
-
-          </tr>
-
-        </thead>
-
-        <tbody>
-
-          {movements.map((movement: any) => (
-
-            <tr key={movement.id}>
-
-              <td className="border p-2">
-                {new Date(movement.createdAt).toLocaleString()}
-              </td>
-
-              <td className="border p-2">
-                {movement.product.name}
-              </td>
-
-              <td className="border p-2">
-                {movement.type}
-              </td>
-
-              <td className="border p-2">
-                {movement.quantity}
-              </td>
-
-              <td className="border p-2">
-                {movement.reason}
-              </td>
+              <th className="text-left p-4">Product</th>
+              <th className="text-left p-4">Stock</th>
+              <th className="text-left p-4">Price</th>
+              <th className="text-left p-4">Value</th>
 
             </tr>
 
-          ))}
+          </thead>
 
-        </tbody>
+          <tbody>
 
-      </table>
+            {inventory.map((item: any) => (
+
+              <tr
+                key={item.id}
+                className="border-t border-slate-100 hover:bg-slate-50"
+              >
+
+                <td className="p-4 font-medium">
+                  {item.product.name}
+                </td>
+
+                <td className="p-4">
+
+                  <span
+                    className={`rounded-full px-3 py-1 text-sm font-medium ${
+                      item.quantity <= 5
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-emerald-100 text-emerald-700"
+                    }`}
+                  >
+                    {item.quantity}
+                  </span>
+
+                </td>
+
+                <td className="p-4">
+                  KES {Number(item.product.price).toLocaleString()}
+                </td>
+
+                <td className="p-4 font-medium">
+                  KES {(item.quantity * Number(item.product.price)).toLocaleString()}
+                </td>
+
+              </tr>
+
+            ))}
+
+          </tbody>
+
+        </table>
+
+      </Card>
+
+      {/* History */}
+
+      <Card className="overflow-hidden">
+
+        <div className="p-6 border-b border-slate-200">
+
+          <h2 className="text-xl font-semibold">
+            Inventory Movement History
+          </h2>
+
+        </div>
+
+        <table className="w-full">
+
+          <thead className="bg-slate-50">
+
+            <tr>
+
+              <th className="text-left p-4">Date</th>
+              <th className="text-left p-4">Product</th>
+              <th className="text-left p-4">Type</th>
+              <th className="text-left p-4">Quantity</th>
+              <th className="text-left p-4">Reason</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            {movements.map((movement: any) => (
+
+              <tr
+                key={movement.id}
+                className="border-t border-slate-100 hover:bg-slate-50"
+              >
+
+                <td className="p-4">
+                  {new Date(movement.createdAt).toLocaleString()}
+                </td>
+
+                <td className="p-4">
+                  {movement.product.name}
+                </td>
+
+                <td className="p-4 font-medium">
+                  {movement.type}
+                </td>
+
+                <td className="p-4">
+                  {movement.quantity}
+                </td>
+
+                <td className="p-4 text-slate-500">
+                  {movement.reason || "-"}
+                </td>
+
+              </tr>
+
+            ))}
+
+          </tbody>
+
+        </table>
+
+      </Card>
 
     </div>
   );

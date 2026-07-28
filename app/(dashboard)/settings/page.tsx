@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import Card from "@/components/ui/Card";
 import PageHeader from "@/components/ui/PageHeader";
 
 import StoreSettings from "@/components/settings/StoreSettings";
@@ -10,7 +11,6 @@ import PaymentSettings from "@/components/settings/PaymentSettings";
 import InventorySettings from "@/components/settings/InventorySettings";
 import UserSettings from "@/components/settings/UserSettings";
 import SecuritySettings from "@/components/settings/SecuritySettings";
-
 
 const tabs = [
   "Store",
@@ -27,37 +27,56 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("Store");
 
   return (
-    <div className="p-6">
+    <div className="space-y-8">
+
       <PageHeader
         title="Settings"
-        description="Configure your liquor POS system."
+        description="Configure your store, inventory, payments and security."
       />
 
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid gap-8 lg:grid-cols-12">
+
         {/* Sidebar */}
-        <aside className="col-span-3 rounded-xl border p-4">
-          <ul className="space-y-2">
+
+        <Card className="lg:col-span-3 p-4 h-fit">
+
+          <nav className="space-y-2">
+
             {tabs.map((tab) => (
-              <li
+
+              <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`cursor-pointer rounded-lg px-4 py-3 transition ${
+                className={`w-full rounded-xl px-4 py-3 text-left font-medium transition ${
                   activeTab === tab
-                    ? "bg-blue-600 text-white"
-                    : "hover:bg-gray-100"
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 }`}
               >
                 {tab}
-              </li>
+              </button>
+
             ))}
-          </ul>
-        </aside>
+
+          </nav>
+
+        </Card>
 
         {/* Content */}
-        <main className="col-span-9 rounded-xl border p-6">
-          <h2 className="mb-6 text-2xl font-semibold">
-            {activeTab} Settings
-          </h2>
+
+        <Card className="lg:col-span-9 p-8">
+
+          <div className="mb-8 border-b border-slate-200 pb-5">
+
+            <h2 className="text-2xl font-semibold text-slate-900">
+              {activeTab} Settings
+            </h2>
+
+            <p className="mt-1 text-slate-500">
+              Configure your {activeTab.toLowerCase()} preferences.
+            </p>
+
+          </div>
 
           {activeTab === "Store" && <StoreSettings />}
 
@@ -72,28 +91,69 @@ export default function SettingsPage() {
           {activeTab === "Security" && <SecuritySettings />}
 
           {activeTab === "Backup" && (
-            <p className="text-gray-500">
-              Backup & Restore coming soon...
-            </p>
+
+            <div className="rounded-xl bg-slate-50 p-8 text-center">
+
+              <div className="text-5xl mb-3">
+                💾
+              </div>
+
+              <h3 className="text-xl font-semibold">
+                Backup & Restore
+              </h3>
+
+              <p className="mt-2 text-slate-500">
+                This feature will be available in a future update.
+              </p>
+
+            </div>
+
           )}
 
           {activeTab === "About" && (
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold">
+
+            <div className="space-y-4">
+
+              <h3 className="text-2xl font-semibold">
                 Liquor POS
               </h3>
 
-              <p className="text-gray-600">
-                Version 1.0.0
-              </p>
+              <div className="rounded-xl bg-slate-50 p-5">
 
-              <p className="text-gray-600">
-                Built with Next.js, Prisma & PostgreSQL.
-              </p>
+                <div className="flex justify-between border-b border-slate-200 py-3">
+
+                  <span className="text-slate-500">
+                    Version
+                  </span>
+
+                  <span className="font-medium">
+                    1.0.0
+                  </span>
+
+                </div>
+
+                <div className="flex justify-between py-3">
+
+                  <span className="text-slate-500">
+                    Built With
+                  </span>
+
+                  <span className="font-medium">
+                    Next.js • Prisma • PostgreSQL
+                  </span>
+
+                </div>
+
+              </div>
+
             </div>
+
           )}
-        </main>
+
+        </Card>
+
       </div>
+
     </div>
   );
 }

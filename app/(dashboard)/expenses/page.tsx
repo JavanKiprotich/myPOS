@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Card from "@/components/ui/Card";
 
 export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -19,9 +20,7 @@ export default function ExpensesPage() {
   }, []);
 
   async function loadExpenses() {
-    const response = await fetch(
-      "/api/expenses"
-    );
+    const response = await fetch("/api/expenses");
 
     const data = await response.json();
 
@@ -63,131 +62,164 @@ export default function ExpensesPage() {
   }
 
   return (
-    <div className="p-6 max-w-4xl">
+    <div className="space-y-8">
 
-      <h1 className="text-3xl font-bold mb-6">
-        Expenses
-      </h1>
+      {/* Header */}
 
-      <div className="border rounded p-4 mb-6">
+      <div>
 
-        <h2 className="text-xl font-semibold mb-4">
-          Record Expense
-        </h2>
+        <h1 className="text-3xl font-bold text-slate-900">
+          Expenses
+        </h1>
 
-        <select
-          className="border p-2 w-full mb-3"
-          value={category}
-          onChange={(e) =>
-            setCategory(e.target.value)
-          }
-        >
-          <option>
-            Electricity
-          </option>
-
-          <option>
-            Miscellaneous
-          </option>
-
-        </select>
-
-        <input
-          className="border p-2 w-full mb-3"
-          placeholder="Description"
-          value={description}
-          onChange={(e) =>
-            setDescription(
-              e.target.value
-            )
-          }
-        />
-
-        <input
-          type="number"
-          className="border p-2 w-full mb-3"
-          placeholder="Amount"
-          value={amount}
-          onChange={(e) =>
-            setAmount(
-              e.target.value
-            )
-          }
-        />
-
-        <button
-          onClick={saveExpense}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          Save Expense
-        </button>
+        <p className="mt-1 text-slate-500">
+          Record and monitor business expenses.
+        </p>
 
       </div>
 
-      <h2 className="text-xl font-semibold mb-3">
-        Expense History
-      </h2>
+      {/* Expense Form */}
 
-      <table className="w-full border">
+      <Card className="p-6">
 
-        <thead>
+        <h2 className="text-xl font-semibold mb-6">
+          Record Expense
+        </h2>
 
-          <tr className="bg-gray-100">
+        <div className="space-y-4">
 
-            <th className="border p-2">
-              Date
-            </th>
+          <select
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-200 outline-none"
+            value={category}
+            onChange={(e) =>
+              setCategory(e.target.value)
+            }
+          >
+            <option>
+              Electricity
+            </option>
 
-            <th className="border p-2">
-              Category
-            </th>
+            <option>
+              Miscellaneous
+            </option>
 
-            <th className="border p-2">
-              Description
-            </th>
+          </select>
 
-            <th className="border p-2">
-              Amount
-            </th>
+          <input
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-200 outline-none"
+            placeholder="Description"
+            value={description}
+            onChange={(e) =>
+              setDescription(
+                e.target.value
+              )
+            }
+          />
 
-          </tr>
+          <input
+            type="number"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-200 outline-none"
+            placeholder="Amount"
+            value={amount}
+            onChange={(e) =>
+              setAmount(
+                e.target.value
+              )
+            }
+          />
 
-        </thead>
+          <button
+            onClick={saveExpense}
+            className="rounded-xl bg-slate-900 px-6 py-3 font-medium text-white transition hover:bg-slate-800"
+          >
+            Save Expense
+          </button>
 
-        <tbody>
+        </div>
 
-          {expenses.map((expense) => (
+      </Card>
 
-            <tr key={expense.id}>
+      {/* Expense History */}
 
-              <td className="border p-2">
-                {new Date(
-                  expense.createdAt
-                ).toLocaleDateString()}
-              </td>
+      <Card className="overflow-hidden">
 
-              <td className="border p-2">
-                {expense.category}
-              </td>
+        <div className="border-b border-slate-200 p-6">
 
-              <td className="border p-2">
-                {expense.description}
-              </td>
+          <h2 className="text-xl font-semibold">
+            Expense History
+          </h2>
 
-              <td className="border p-2">
-                KES{" "}
-                {Number(
-                  expense.amount
-                ).toLocaleString()}
-              </td>
+        </div>
+
+        <table className="w-full">
+
+          <thead className="bg-slate-50">
+
+            <tr>
+
+              <th className="px-6 py-4 text-left font-semibold text-slate-700">
+                Date
+              </th>
+
+              <th className="px-6 py-4 text-left font-semibold text-slate-700">
+                Category
+              </th>
+
+              <th className="px-6 py-4 text-left font-semibold text-slate-700">
+                Description
+              </th>
+
+              <th className="px-6 py-4 text-left font-semibold text-slate-700">
+                Amount
+              </th>
 
             </tr>
 
-          ))}
+          </thead>
 
-        </tbody>
+          <tbody>
 
-      </table>
+            {expenses.map((expense) => (
+
+              <tr
+                key={expense.id}
+                className="border-t border-slate-100 hover:bg-slate-50"
+              >
+
+                <td className="px-6 py-4 text-slate-600">
+                  {new Date(
+                    expense.createdAt
+                  ).toLocaleDateString()}
+                </td>
+
+                <td className="px-6 py-4">
+
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
+                    {expense.category}
+                  </span>
+
+                </td>
+
+                <td className="px-6 py-4">
+                  {expense.description}
+                </td>
+
+                <td className="px-6 py-4 font-semibold text-slate-900">
+                  KES{" "}
+                  {Number(
+                    expense.amount
+                  ).toLocaleString()}
+                </td>
+
+              </tr>
+
+            ))}
+
+          </tbody>
+
+        </table>
+
+      </Card>
 
     </div>
   );

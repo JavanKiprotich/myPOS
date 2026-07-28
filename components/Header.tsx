@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Clock from "@/components/Clock";
 
 export default function Header() {
   const [user, setUser] = useState<any>(null);
@@ -34,9 +35,7 @@ export default function Header() {
           Liquor POS
         </h2>
 
-        <p className="text-gray-500">
-          {new Date().toLocaleDateString()}
-        </p>
+       <Clock />
 
       </div>
 

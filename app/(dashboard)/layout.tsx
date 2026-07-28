@@ -7,23 +7,34 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex h-screen overflow-hidden bg-slate-100">
 
-      <Sidebar />
+      {/* Sidebar */}
 
-      <div className="flex-1 flex flex-col">
+      <aside className="h-full overflow-y-auto">
+        <Sidebar />
+      </aside>
+
+      {/* Right Side */}
+
+      <div className="flex flex-1 flex-col overflow-hidden">
+
+        {/* Header */}
 
         <Header />
 
-        <main className="flex-1 p-8 overflow-auto">
-          {children}
-        </main>
+        {/* Scrollable Page */}
 
-        <footer className="border-t bg-white px-6 py-3 text-center text-xs text-gray-400">
-  © {new Date().getFullYear()} Liquor POS System. All Rights Reserved.
-  <br />
-  Developed by JavanTECH
-</footer>
+        <main className="flex-1 overflow-y-auto p-8">
+          {children}
+
+          <footer className="mt-10 border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+            © {new Date().getFullYear()} Liquor POS System. All Rights Reserved.
+            <br />
+            Developed by JavanTECH
+          </footer>
+
+        </main>
 
       </div>
 

@@ -5,7 +5,8 @@ import Toast from "@/components/ui/Toast";
 import ProductPanel from "./components/ProductPanel";
 import MpesaModal from "./components/MpesaModal";
 import CameraScanner from "./components/CameraScanner";
-
+import CartItem from "@/components/pos/CartItem";
+import CartPanel from "@/components/pos/CartPanel";
 
 import {
   playBeep,
@@ -474,197 +475,20 @@ async function sendStkPush() {
 
        {/* CART */}
 
-<div className="lg:col-span-3 flex flex-col">
-
-          <h2 className="font-bold text-xl mb-4">
-            Cart
-          </h2>
-
-          <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
-
-            {cart.map((item: any) => (
-
-              <div
-                key={item.id}
-               className="border rounded-lg px-4 py-2 text-lg"
-              >
-
-                <div className="font-semibold">
-                  {item.name}
-                </div>
-
-                <div className="flex items-center gap-2 mt-2">
-
-                  <button
-                    onClick={() =>
-                      decreaseQty(item.id)
-                    }
-                    className="border rounded-lg px-4 py-2 text-lg"
-                  >
-                    -
-                  </button>
-
-                  <span>
-                    Qty: {item.quantity}
-                  </span>
-
-                  <button
-                    onClick={() =>
-                      increaseQty(item.id)
-                    }
-                    className="border rounded-lg px-4 py-2 text-lg"
-                  >
-                    +
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      removeItem(item.id)
-                    }
-                    className="border rounded-lg px-4 py-2 ml-auto text-red-600"
-                  >
-                    Remove
-                  </button>
-
-                </div>
-
-                <div className="mt-2 font-medium">
-                  KES{" "}
-                  {(
-                    Number(item.price) *
-                    item.quantity
-                  ).toLocaleString()}
-                </div>
-
-              </div>
-
-            ))}
-
-          </div>
-
-          <div className="sticky bottom-0 bg-white border-t pt-4 mt-6">
-
-            <label className="block mb-2 font-medium">
-              Customer
-            </label>
-
-            <select
-              className="w-full border rounded-lg p-3"
-              value={customerId}
-              onChange={(e) =>
-                setCustomerId(
-                  e.target.value
-                )
-              }
-            >
-
-              <option value="">
-                Walk-in Customer
-              </option>
-
-              {customers.map(
-                (customer: any) => (
-
-                  <option
-                    key={customer.id}
-                    value={customer.id}
-                  >
-                    {customer.name}
-                  </option>
-
-                )
-              )}
-
-            </select>
-
-          </div>
-
-          <div className="mt-6">
-
-            <label className="block mb-2 font-medium">
-              Payment Method
-            </label>
-
-            <select
-  value={paymentMethod}
-  onChange={(e) => setPaymentMethod(e.target.value)}
-  className="w-full border rounded-lg p-3"
->
-  {settings?.enableCash && (
-    <option value="CASH">Cash</option>
-  )}
-
-  {settings?.enableMpesa && (
-    <option value="MPESA">M-Pesa</option>
-  )}
-
-  {settings?.enableCredit && (
-    <option value="CREDIT">Credit</option>
-  )}
-</select>
-
-          </div>
-
-         <div className="mt-6">
-           <div className="text-gray-500">
-  TOTAL
-</div>
-
-<div className="text-4xl lg:text-5xl font-bold">
-  KES {total.toLocaleString()}
-</div>
-
-<MpesaModal
-  show={showMpesaModal}
+<CartPanel
+  cart={cart}
   total={total}
-  mpesaPhone={mpesaPhone}
-  setMpesaPhone={setMpesaPhone}
-  onCancel={() => setShowMpesaModal(false)}
-  onSend={sendStkPush}
+  customers={customers}
+  customerId={customerId}
+  setCustomerId={setCustomerId}
+  paymentMethod={paymentMethod}
+  setPaymentMethod={setPaymentMethod}
+  settings={settings}
+  increaseQty={increaseQty}
+  decreaseQty={decreaseQty}
+  removeItem={removeItem}
+  completeSale={completeSale}
 />
-
-{showScanner && (
-  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-
-    <div className="bg-white rounded-xl p-6 w-full max-w-md">
-
-      <CameraScanner
-  onScan={(barcode) => {
-    scanBarcode(barcode);
-  }}
-/>
-
-      <button
-        onClick={() => setShowScanner(false)}
-        className="w-full mt-4 border rounded-lg py-3"
-      >
-        Cancel
-      </button>
-
-    </div>
-
-  </div>
-)}
-
-
-          </div>
-
-          <button
-            onClick={completeSale}
-           className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl text-xl font-bold"
-          >
-            Complete Sale
-          </button>
-
-   {/*
-   <button
-  onClick={logout}
-  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded fixed bottom-4 right-4"
->
-  Logout
-</button>
-*/}
-        </div>
 
       </div>
 
