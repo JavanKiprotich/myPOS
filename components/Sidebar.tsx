@@ -1,118 +1,192 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
+import {
+  LayoutDashboard,
+  ShoppingCart,
+  Package,
+  Boxes,
+  Users,
+  Receipt,
+  CreditCard,
+  Wallet,
+  Shield,
+  Settings,
+  ClipboardList,
+  Store,
+} from "lucide-react";
+
+type User = {
+  name: string;
+  role: "ADMIN" | "MANAGER" | "CASHIER";
+};
 
 export default function Sidebar() {
   const pathname = usePathname();
 
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const response = await fetch("/api/auth/me");
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+
+        setUser(data);
+      } catch (error) {
+        console.error("Failed to load user:", error);
+      }
+    }
+
+    loadUser();
+  }, []);
+
+  const initials =
+    user?.name
+      ?.split(" ")
+      .map((word) => word[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "?";
+
+  const roleLabels = {
+    ADMIN: "Administrator",
+    MANAGER: "Manager",
+    CASHIER: "Cashier",
+  };
+
   const links = [
     {
       href: "/dashboard",
-      icon: "📊",
       label: "Dashboard",
+      icon: LayoutDashboard,
     },
     {
       href: "/pos",
-      icon: "🛒",
       label: "POS",
+      icon: ShoppingCart,
     },
     {
       href: "/products",
-      icon: "🍾",
       label: "Products",
+      icon: Package,
     },
     {
       href: "/inventory",
-      icon: "📦",
       label: "Inventory",
+      icon: Boxes,
     },
     {
       href: "/customers",
-      icon: "👥",
       label: "Customers",
+      icon: Users,
     },
     {
       href: "/sales",
-      icon: "💰",
       label: "Sales",
+      icon: Receipt,
     },
     {
       href: "/credit",
-      icon: "💳",
       label: "Credit",
+      icon: CreditCard,
     },
     {
       href: "/expenses",
-      icon: "🧾",
       label: "Expenses",
+      icon: Wallet,
     },
-   {
-  href: "/users",
-  icon: "👤",
-  label: "Users",
-},
     {
-  href: "/settings",
-  icon: "⚙️",
-  label: "Settings",
-},
-
-{
-  href: "/audit",
-  icon: "📋",
-  label: "Audit Log",
-}
-
+      href: "/users",
+      label: "Users",
+      icon: Shield,
+    },
+    {
+      href: "/settings",
+      label: "Settings",
+      icon: Settings,
+    },
+    {
+      href: "/audit",
+      label: "Audit Log",
+      icon: ClipboardList,
+    },
   ];
 
   return (
-    <aside className="w-64 bg-slate-900 text-white min-h-screen shadow-lg">
+    <aside className="flex min-h-screen w-72 shrink-0 flex-col border-r border-slate-800 bg-slate-900">
+      {/* Logo */}
+      <div className="border-b border-slate-800 p-6">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl bg-slate-800 p-3">
+            <Store size={24} className="text-white" />
+          </div>
 
-      <div className="p-6 border-b border-slate-700">
+          <div>
+            <h1 className="text-xl font-bold text-white">
+              Liquor POS
+            </h1>
 
-        <h1 className="text-2xl font-bold">
-          🍷 Liquor POS
-        </h1>
-
-        <p className="text-slate-400 text-sm mt-1">
-          Management System
-        </p>
-
+            <p className="text-sm text-slate-400">
+              Retail Management
+            </p>
+          </div>
+        </div>
       </div>
 
-      <nav className="mt-4">
-
+      {/* Navigation */}
+      <nav className="flex-1 space-y-2 p-4">
         {links.map((link) => {
+          const Icon = link.icon;
 
           const active =
-            pathname === link.href;
+            pathname === link.href ||
+            pathname.startsWith(link.href + "/");
 
           return (
             <Link
               key={link.href}
               href={link.href}
-              className={`flex items-center gap-3 px-6 py-4 transition-all
-                ${
-                  active
-                    ? "bg-blue-600"
-                    : "hover:bg-slate-800"
-                }`}
+              className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 ${
+                active
+                  ? "bg-slate-800 text-white shadow-sm"
+                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
+              }`}
             >
-              <span className="text-xl">
-                {link.icon}
-              </span>
+              <Icon size={20} />
 
-              <span>
+              <span className="font-medium">
                 {link.label}
               </span>
-
             </Link>
           );
         })}
-
       </nav>
 
+      {/* User Profile */}
+      <div className="border-t border-slate-800 p-4">
+        <div className="flex items-center gap-3 rounded-xl bg-slate-800 p-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
+            {initials}
+          </div>
+
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-white">
+              {user?.name || "Loading..."}
+            </p>
+
+            <p className="text-xs text-slate-400">
+              {user ? roleLabels[user.role] : ""}
+            </p>
+          </div>
+        </div>
+      </div>
     </aside>
   );
 }

@@ -126,6 +126,37 @@ export async function GET() {
         )?._sum.amount
       ) || 0;
 
+      // Weekly Sales (Last 7 Days)
+const weeklySales = [];
+
+for (let i = 6; i >= 0; i--) {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - i);
+
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+
+  const sales = await prisma.sale.aggregate({
+    _sum: {
+      total: true,
+    },
+    where: {
+      createdAt: {
+        gte: start,
+        lt: end,
+      },
+    },
+  });
+
+  weeklySales.push({
+    day: start.toLocaleDateString("en-US", {
+      weekday: "short",
+    }),
+    sales: Number(sales._sum.total) || 0,
+  });
+}
+
     // Top Selling Products
     const groupedProducts =
       await prisma.saleItem.groupBy({
@@ -188,6 +219,8 @@ export async function GET() {
       lowStock,
 
       topProducts,
+
+      weeklySales,
     });
   } catch (error) {
     console.error(error);
