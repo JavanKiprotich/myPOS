@@ -43,11 +43,33 @@ export async function PUT(request, { params }) {
       );
     }
 
+    // Admins can assign users to any store.
+    // Other roles remain restricted to their own store.
+    const storeId =
+      session.role === "ADMIN" && body.storeId
+        ? body.storeId
+        : session.storeId;
+
+    // Verify that the selected store exists.
+    const store = await prisma.store.findUnique({
+      where: {
+        id: storeId,
+      },
+    });
+
+    if (!store) {
+      return NextResponse.json(
+        { error: "Selected store not found." },
+        { status: 400 }
+      );
+    }
+
     const updateData = {
       name: body.name,
       email: body.email,
       role: body.role,
       active: body.active,
+      storeId,
     };
 
     if (body.password) {
@@ -69,23 +91,29 @@ export async function PUT(request, { params }) {
         id,
       },
       data: updateData,
+      include: {
+        store: true,
+      },
     });
 
     await logAudit({
       userId: session.id,
       action: "USER_UPDATED",
       target: user.name,
-      details: `Updated user details (Role: ${user.role})`,
+      details: `Updated user details (Role: ${user.role}, Store: ${user.store.name})`,
     });
 
     return NextResponse.json(user);
-
   } catch (error) {
     console.error(error);
 
     return NextResponse.json(
-      { error: "Failed to update user." },
-      { status: 500 }
+      {
+        error: "Failed to update user.",
+      },
+      {
+        status: 500,
+      }
     );
   }
 }
@@ -117,7 +145,8 @@ export async function DELETE(request, { params }) {
     if (session.id === id) {
       return NextResponse.json(
         {
-          error: "You cannot deactivate or activate your own account.",
+          error:
+            "You cannot deactivate or activate your own account.",
         },
         { status: 400 }
       );
@@ -186,7 +215,6 @@ export async function DELETE(request, { params }) {
         ? "User activated successfully."
         : "User deactivated successfully.",
     });
-
   } catch (error) {
     console.error(error);
 

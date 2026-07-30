@@ -6,6 +6,7 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
 enum UserRole {
   ADMIN
   MANAGER
@@ -30,6 +31,12 @@ enum SaleStatus {
   CANCELLED
 }
 
+enum RunningBillStatus {
+  OPEN
+  CLOSED
+  CANCELLED
+}
+
 model Store {
   id        String   @id @default(cuid())
   name      String
@@ -41,44 +48,47 @@ model Store {
   sales     Sale[]
   movements InventoryMovement[]
 
+  runningBills RunningBill[]
+
   settings StoreSettings?
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
+  id       String  @id @default(cuid())
+  name     String
+  email    String  @unique
+  password String
+  pin      String?
 
-  pin       String?
+  role   UserRole
+  active Boolean  @default(true)
 
-  role      UserRole
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
 
-  active    Boolean  @default(true)
-
-  storeId   String
-  store     Store    @relation(fields: [storeId], references: [id])
-
-  sales     Sale[]   @relation("CashierSales")
-
+  sales     Sale[]     @relation("CashierSales")
   auditLogs AuditLog[]
 
   createdAt DateTime @default(now())
 }
+
 model Product {
-  id        String    @id @default(cuid())
+  id        String  @id @default(cuid())
   name      String
-  sku       String    @unique
+  sku       String  @unique
   category  String
   unit      String
-  price     Decimal   @db.Decimal(10, 2)
-  costPrice Decimal @default(0) @db.Decimal(10,2)
-  createdAt DateTime  @default(now())
-   barcode     String?  @unique
+  price     Decimal @db.Decimal(10, 2)
+  costPrice Decimal @default(0) @db.Decimal(10, 2)
+  barcode   String? @unique
+
+  createdAt DateTime @default(now())
 
   inventory Inventory[]
   saleItems SaleItem[]
   movements InventoryMovement[]
+
+  runningBillItems RunningBillItem[]
 }
 
 model Inventory {
@@ -88,50 +98,54 @@ model Inventory {
   quantity  Int      @default(0)
   updatedAt DateTime @updatedAt
 
-  store      Store   @relation(fields: [storeId], references: [id])
-  product    Product @relation(fields: [productId], references: [id])
+  store   Store   @relation(fields: [storeId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
 
   @@unique([storeId, productId])
 }
 
 model Customer {
-  id            String          @id @default(cuid())
-  name          String
-  phone         String          @unique
-  createdAt     DateTime        @default(now())
+  id        String   @id @default(cuid())
+  name      String
+  phone     String   @unique
+  createdAt DateTime @default(now())
 
   sales         Sale[]
   creditAccount CreditAccount?
+  runningBills  RunningBill[]
 }
 
 model Sale {
-  id         String      @id @default(cuid())
+  id         String  @id @default(cuid())
   storeId    String
   customerId String?
   cashierId  String
-  total      Decimal     @db.Decimal(10, 2)
-  status     SaleStatus  @default(COMPLETED)
-  syncStatus String      @default("PENDING")
-  createdAt  DateTime    @default(now())
 
-  store      Store      @relation(fields: [storeId], references: [id])
-  customer   Customer?  @relation(fields: [customerId], references: [id])
-  cashier    User       @relation("CashierSales", fields: [cashierId], references: [id])
+  total      Decimal    @db.Decimal(10, 2)
+  status     SaleStatus @default(COMPLETED)
+  syncStatus String     @default("PENDING")
 
-  items      SaleItem[]
-  payments   Payment[]
+  createdAt DateTime @default(now())
+
+  store    Store     @relation(fields: [storeId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
+  cashier  User      @relation("CashierSales", fields: [cashierId], references: [id])
+
+  items    SaleItem[]
+  payments Payment[]
 }
 
 model SaleItem {
-  id        String    @id @default(cuid())
+  id        String @id @default(cuid())
   saleId    String
   productId String
-  quantity  Int
-  unitPrice Decimal   @db.Decimal(10, 2)
-  subtotal  Decimal   @db.Decimal(10, 2)
 
-  sale      Sale      @relation(fields: [saleId], references: [id])
-  product   Product   @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  subtotal  Decimal @db.Decimal(10, 2)
+
+  sale    Sale    @relation(fields: [saleId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
 }
 
 model Payment {
@@ -141,159 +155,213 @@ model Payment {
   amount    Decimal       @db.Decimal(10, 2)
   status    PaymentStatus @default(PENDING)
   reference String?
-  createdAt DateTime      @default(now())
 
-  sale      Sale          @relation(fields: [saleId], references: [id])
+  createdAt DateTime @default(now())
+
+  sale Sale @relation(fields: [saleId], references: [id])
 }
 
 model CreditAccount {
-  id           String    @id @default(cuid())
-  customerId   String    @unique
-  balance      Decimal   @db.Decimal(10, 2) @default(0)
-  updatedAt    DateTime  @updatedAt
+  id         String   @id @default(cuid())
+  customerId String   @unique
+  balance    Decimal  @default(0) @db.Decimal(10, 2)
+  updatedAt  DateTime @updatedAt
 
   customer     Customer            @relation(fields: [customerId], references: [id])
   transactions CreditTransaction[]
 }
 
 model CreditTransaction {
-  id              String    @id @default(cuid())
+  id              String  @id @default(cuid())
   creditAccountId String
   saleId          String?
-  amount          Decimal   @db.Decimal(10, 2)
-  type            String
-  createdAt       DateTime  @default(now())
 
-  creditAccount   CreditAccount @relation(fields: [creditAccountId], references: [id])
+  amount    Decimal  @db.Decimal(10, 2)
+  type      String
+  createdAt DateTime @default(now())
+
+  creditAccount CreditAccount @relation(fields: [creditAccountId], references: [id])
 }
 
 model InventoryMovement {
-  id          String   @id @default(cuid())
-  storeId     String
-  productId   String
-  type        String
-  quantity    Int
-  reason      String?
-  createdAt   DateTime @default(now())
+  id        String @id @default(cuid())
+  storeId   String
+  productId String
 
-  store        Store   @relation(fields: [storeId], references: [id])
-  product      Product @relation(fields: [productId], references: [id])
+  type     String
+  quantity Int
+  reason   String?
+
+  createdAt DateTime @default(now())
+
+  store   Store   @relation(fields: [storeId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
 }
 
 model Expense {
   id          String   @id @default(cuid())
   category    String
   description String
-  amount      Decimal  @db.Decimal(10,2)
+  amount      Decimal  @db.Decimal(10, 2)
   createdAt   DateTime @default(now())
 }
 
-
 model StoreSettings {
-  id                   String   @id @default(cuid())
+  id      String @id @default(cuid())
+  storeId String @unique
 
-  storeId              String   @unique
-  store                Store    @relation(fields: [storeId], references: [id])
+  store Store @relation(fields: [storeId], references: [id])
 
-  businessName         String?
-  phone                String?
-  email                String?
-  address              String?
+  businessName String?
+  phone        String?
+  email        String?
+  address      String?
 
-  currency             String   @default("KES")
-  timezone             String   @default("Africa/Nairobi")
+  currency String @default("KES")
+  timezone String @default("Africa/Nairobi")
 
+  // Payment Settings
+  defaultPaymentMethod String  @default("CASH")
+  requireFullPayment   Boolean @default(true)
 
-// Payment Settings
-defaultPaymentMethod String @default("CASH")
-requireFullPayment   Boolean @default(true)
+  // M-Pesa Settings
+  mpesaEnvironment    String  @default("sandbox")
+  mpesaShortcode      String?
+  mpesaTillNumber     String?
+  mpesaConsumerKey    String?
+  mpesaConsumerSecret String?
+  mpesaPasskey        String?
+  mpesaCallbackUrl    String?
+  mpesaAutoVerify     Boolean @default(true)
 
+  // Receipt Settings
+  receiptHeader String?
+  receiptFooter String?
 
-// M-Pesa Settings
-mpesaEnvironment     String  @default("sandbox")
-mpesaShortcode       String?
-mpesaTillNumber      String?
-mpesaConsumerKey     String?
-mpesaConsumerSecret  String?
-mpesaPasskey         String?
-mpesaCallbackUrl     String?
-mpesaAutoVerify      Boolean @default(true)
+  showCashier    Boolean @default(true)
+  showCustomer   Boolean @default(true)
+  showLogo       Boolean @default(false)
+  autoPrint      Boolean @default(false)
+  printDuplicate Boolean @default(false)
 
-  receiptHeader        String?
-  receiptFooter        String?
-
-  showCashier     Boolean @default(true)
-showCustomer    Boolean @default(true)
-showLogo        Boolean @default(false)
-autoPrint       Boolean @default(false)
-printDuplicate  Boolean @default(false)
-
-
-  paperWidth           String   @default("80mm")
+  paperWidth String @default("80mm")
 
   // Inventory Settings
-lowStockAlert      Int     @default(5)
+  lowStockAlert   Int     @default(5)
+  autoDeductStock Boolean @default(true)
+  trackInventory  Boolean @default(true)
+  stockValuation  String  @default("AVERAGE")
+  requireBarcode  Boolean @default(false)
 
-autoDeductStock    Boolean @default(true)
-trackInventory     Boolean @default(true)
-stockValuation     String  @default("AVERAGE")
-requireBarcode     Boolean @default(false)
+  enableCash   Boolean @default(true)
+  enableMpesa  Boolean @default(true)
+  enableCredit Boolean @default(true)
 
-  enableCash           Boolean  @default(true)
-  enableMpesa          Boolean  @default(true)
-  enableCredit         Boolean  @default(true)
+  allowNegativeStock Boolean @default(false)
+  minimumStock       Int     @default(5)
 
-  allowNegativeStock   Boolean  @default(false)
-  minimumStock         Int      @default(5)
+  // User & Role Settings
+  sessionTimeout Int @default(30)
 
-  
+  managerRefund        Boolean @default(true)
+  managerPriceOverride Boolean @default(true)
+  managerCancelSale    Boolean @default(true)
 
-// User & Role Settings
-sessionTimeout      Int     @default(30)
+  cashierSell         Boolean @default(true)
+  cashierPrintReceipt Boolean @default(true)
+  cashierDeleteSale   Boolean @default(false)
+  cashierChangePrice  Boolean @default(false)
 
-managerRefund       Boolean @default(true)
-managerPriceOverride Boolean @default(true)
-managerCancelSale   Boolean @default(true)
+  // Security Settings
+  requirePinRefund     Boolean @default(true)
+  requirePinVoidSale   Boolean @default(true)
+  requirePinDiscount   Boolean @default(true)
+  requirePinCashDrawer Boolean @default(false)
 
-cashierSell         Boolean @default(true)
-cashierPrintReceipt Boolean @default(true)
-cashierDeleteSale   Boolean @default(false)
-cashierChangePrice  Boolean @default(false)
+  minimumPasswordLength Int @default(8)
+  autoLogoutMinutes     Int @default(30)
 
-// Security Settings
-requirePinRefund      Boolean @default(true)
-requirePinVoidSale    Boolean @default(true)
-requirePinDiscount    Boolean @default(true)
-requirePinCashDrawer  Boolean @default(false)
+  enableAuditLog Boolean @default(true)
 
-minimumPasswordLength Int     @default(8)
-autoLogoutMinutes     Int     @default(30)
+  // Backup Settings
+  autoBackup      Boolean @default(false)
+  backupFrequency String  @default("DAILY")
+  retainBackups   Int     @default(30)
 
-enableAuditLog        Boolean @default(true)
+  backupSales     Boolean @default(true)
+  backupInventory Boolean @default(true)
+  backupCustomers Boolean @default(true)
+  backupSettings  Boolean @default(true)
 
-// Backup Settings
-autoBackup            Boolean @default(false)
-backupFrequency       String  @default("DAILY")
-retainBackups         Int     @default(30)
-backupSales           Boolean @default(true)
-backupInventory       Boolean @default(true)
-backupCustomers       Boolean @default(true)
-backupSettings        Boolean @default(true)
-
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model AuditLog {
-  id        String   @id @default(cuid())
+  id     String @id @default(cuid())
+  userId String
 
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
-  action    String
-  target    String?
-  details   String?
+  action  String
+  target  String?
+  details String?
 
   createdAt DateTime @default(now())
+}
+
+model RunningBill {
+  id         String  @id @default(cuid())
+  storeId    String
+  customerId String?
+
+  name  String
+  phone String?
+  notes String?
+
+  status RunningBillStatus @default(OPEN)
+
+  total Decimal @default(0) @db.Decimal(10, 2)
+  paid  Decimal @default(0) @db.Decimal(10, 2)
+
+  openedAt DateTime  @default(now())
+  closedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  store    Store     @relation(fields: [storeId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
+
+  items    RunningBillItem[]
+  payments RunningBillPayment[]
+}
+
+model RunningBillItem {
+  id            String @id @default(cuid())
+  runningBillId String
+  productId     String
+
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  subtotal  Decimal @db.Decimal(10, 2)
+
+  runningBill RunningBill @relation(fields: [runningBillId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model RunningBillPayment {
+  id            String @id @default(cuid())
+  runningBillId String
+
+  amount    Decimal       @db.Decimal(10, 2)
+  method    PaymentMethod
+  status    PaymentStatus @default(VERIFIED)
+  reference String?
+
+  createdAt DateTime @default(now())
+
+  runningBill RunningBill @relation(fields: [runningBillId], references: [id], onDelete: Cascade)
 }

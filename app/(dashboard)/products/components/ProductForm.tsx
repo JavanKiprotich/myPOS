@@ -8,7 +8,16 @@ import {
   PRODUCT_UNITS,
 } from "@/lib/constants/product";
 
-export default function ProductForm() {
+
+type ProductFormProps = {
+  product?: any;
+  mode?: "create" | "edit";
+};
+
+
+
+export default function ProductForm({ product, mode }: ProductFormProps) {
+  
   const [showScanner, setShowScanner] = useState(false);
 
   const [toast, setToast] = useState({

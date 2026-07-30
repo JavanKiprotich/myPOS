@@ -1,7 +1,7 @@
 "use client";
 
 type ProductPanelProps = {
-   barcode: string;
+  barcode: string;
   setBarcode: (value: string) => void;
   barcodeRef: React.RefObject<HTMLInputElement | null>;
   scanBarcode: (barcode: string) => void;
@@ -10,11 +10,8 @@ type ProductPanelProps = {
   setSearch: (value: string) => void;
   filteredProducts: any[];
   addToCart: (product: any) => void;
-
   onOpenCamera: () => void;
 };
-
-
 
 export default function ProductPanel({
   barcode,
@@ -26,22 +23,22 @@ export default function ProductPanel({
   setSearch,
   filteredProducts,
   addToCart,
-
   onOpenCamera,
 }: ProductPanelProps) {
   return (
-   <div className="lg:col-span-2 flex flex-col min-h-0">
+    <div className="lg:col-span-2 flex flex-col min-h-0">
 
       <h2 className="font-bold text-xl mb-4">
         Products
       </h2>
 
-    <button
-  onClick={onOpenCamera}
-  className="w-full mb-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg py-3 font-semibold"
->
-  📷 Scan With Camera
-</button>
+      <button
+        type="button"
+        onClick={onOpenCamera}
+        className="w-full mb-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg py-3 font-semibold"
+      >
+        📷 Scan With Camera
+      </button>
 
       <input
         ref={barcodeRef}
@@ -64,19 +61,13 @@ export default function ProductPanel({
             scanBarcode(barcode);
           }
         }}
-        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 mb-3 outline-none transition
-focus:border-slate-500
-focus:ring-2
-focus:ring-slate-200"
+        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 mb-3 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
       />
 
       <input
         type="text"
         placeholder="Search product..."
-        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 mb-4 outline-none transition
-focus:border-slate-500
-focus:ring-2
-focus:ring-slate-200"
+        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 mb-4 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
@@ -85,53 +76,59 @@ focus:ring-slate-200"
         <div className="border rounded-lg overflow-y-auto max-h-80 lg:max-h-[75vh]">
 
           {filteredProducts.length === 0 ? (
-
             <div className="p-4 text-gray-500">
               No matching products
             </div>
-
           ) : (
+            filteredProducts.map((product: any) => {
+              const stock = Number(product.stock ?? 0);
+              const sellingPrice = Number(
+                product.sellingPrice ?? 0
+              );
 
-            filteredProducts.map((product: any) => (
+              const outOfStock = stock <= 0;
+              const lowStock = stock > 0 && stock <= 5;
 
-              <button
-                key={product.id}
-                disabled={
-                  (product.inventory?.[0]?.quantity ?? 0) <= 0
-                }
-                onClick={() => {
-                  addToCart(product);
-                  setSearch("");
-                  focusBarcode();
-                }}
-                className={`w-full text-left p-4 border-b border-slate-200 transition-colors ${
-  (product.inventory?.[0]?.quantity ?? 0) <= 0
-    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-    : "hover:bg-slate-50"
-}`}
-              >
-                <div className="text-base font-semibold text-slate-900">
-                  {product.name}
-                </div>
+              return (
+                <button
+                  key={product.id}
+                  type="button"
+                  disabled={outOfStock}
+                  onClick={() => {
+                    addToCart(product);
+                    setSearch("");
+                    focusBarcode();
+                  }}
+                  className={`w-full text-left p-4 border-b border-slate-200 transition-colors ${
+                    outOfStock
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                      : "hover:bg-slate-50"
+                  }`}
+                >
+                  <div className="text-base font-semibold text-slate-900">
+                    {product.name}
+                  </div>
 
-                <div className="mt-1 text-slate-700">
-                  KES {Number(product.price).toLocaleString()}
-                </div>
+                  <div className="mt-1 text-slate-700 font-medium">
+                    KES {sellingPrice.toLocaleString()}
+                  </div>
 
-          <span
-  className={`inline-flex mt-2 rounded-full px-3 py-1 text-xs font-medium ${
-    (product.inventory?.[0]?.quantity ?? 0) <= 5
-      ? "bg-amber-100 text-amber-700"
-      : "bg-green-100 text-green-700"
-  }`}
->
-  Stock: {product.inventory?.[0]?.quantity ?? 0}
-</span>
-
-              </button>
-
-            ))
-
+                  <span
+                    className={`inline-flex mt-2 rounded-full px-3 py-1 text-xs font-medium ${
+                      outOfStock
+                        ? "bg-red-100 text-red-700"
+                        : lowStock
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-green-100 text-green-700"
+                    }`}
+                  >
+                    {outOfStock
+                      ? "Out of Stock"
+                      : `Stock: ${stock}`}
+                  </span>
+                </button>
+              );
+            })
           )}
 
         </div>
