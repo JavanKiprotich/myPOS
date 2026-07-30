@@ -1,6 +1,9 @@
 "use client";
 
+"use client";
+
 import {
+  Suspense,
   useEffect,
   useRef,
   useState,
@@ -24,7 +27,7 @@ import {
 
 
 
-export default function POSPage() {
+function POSContent() {
   const [products, setProducts] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [customerId, setCustomerId] = useState("");
@@ -1278,5 +1281,13 @@ async function sendStkPush() {
       />
 
     </div>
+  );
+}
+
+export default function POSPage() {
+  return (
+    <Suspense fallback={<div>Loading POS...</div>}>
+      <POSContent />
+    </Suspense>
   );
 }
