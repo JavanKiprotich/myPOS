@@ -13,6 +13,7 @@ import {
   Receipt,
   CreditCard,
   Wallet,
+  BarChart3,
   Shield,
   Settings,
   ClipboardList,
@@ -24,23 +25,40 @@ type User = {
   role: "ADMIN" | "MANAGER" | "CASHIER";
 };
 
+type NavLink = {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number }>;
+};
+
 export default function Sidebar() {
   const pathname = usePathname();
 
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] =
+    useState<User | null>(null);
 
   useEffect(() => {
     async function loadUser() {
       try {
-        const response = await fetch("/api/auth/me");
+        const response = await fetch(
+          "/api/auth/me",
+          {
+            cache: "no-store",
+          }
+        );
 
-        if (!response.ok) return;
+        if (!response.ok) {
+          return;
+        }
 
         const data = await response.json();
 
         setUser(data);
       } catch (error) {
-        console.error("Failed to load user:", error);
+        console.error(
+          "Failed to load user:",
+          error
+        );
       }
     }
 
@@ -61,7 +79,7 @@ export default function Sidebar() {
     CASHIER: "Cashier",
   };
 
-  const links = [
+  const mainLinks: NavLink[] = [
     {
       href: "/dashboard",
       label: "Dashboard",
@@ -103,29 +121,47 @@ export default function Sidebar() {
       icon: Wallet,
     },
     {
+      href: "/reports/profit-loss",
+      label: "Profit & Loss",
+      icon: BarChart3,
+    },
+  ];
+
+  const adminLinks: NavLink[] = [
+    {
+      href: "/admin/stores",
+      label: "Stores",
+      icon: Store,
+    },
+    {
       href: "/users",
       label: "Users",
       icon: Shield,
-    },
-    {
-      href: "/settings",
-      label: "Settings",
-      icon: Settings,
     },
     {
       href: "/audit",
       label: "Audit Log",
       icon: ClipboardList,
     },
+    {
+      href: "/settings",
+      label: "Settings",
+      icon: Settings,
+    },
   ];
 
   return (
     <aside className="flex min-h-screen w-72 shrink-0 flex-col border-r border-slate-800 bg-slate-900">
+
       {/* Logo */}
       <div className="border-b border-slate-800 p-6">
         <div className="flex items-center gap-3">
+
           <div className="rounded-xl bg-slate-800 p-3">
-            <Store size={24} className="text-white" />
+            <Store
+              size={24}
+              className="text-white"
+            />
           </div>
 
           <div>
@@ -137,41 +173,95 @@ export default function Sidebar() {
               Retail Management
             </p>
           </div>
+
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-2 p-4">
-        {links.map((link) => {
-          const Icon = link.icon;
+      <nav className="flex-1 space-y-6 overflow-y-auto p-4">
 
-          const active =
-            pathname === link.href ||
-            pathname.startsWith(link.href + "/");
+        {/* Main */}
+        <div>
+          <div className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Main
+          </div>
 
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 ${
-                active
-                  ? "bg-slate-800 text-white shadow-sm"
-                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
-              }`}
-            >
-              <Icon size={20} />
+          <div className="space-y-2">
+            {mainLinks.map((link) => {
+              const Icon = link.icon;
 
-              <span className="font-medium">
-                {link.label}
-              </span>
-            </Link>
-          );
-        })}
+              const active =
+                pathname === link.href ||
+                pathname.startsWith(
+                  link.href + "/"
+                );
+
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 ${
+                    active
+                      ? "bg-slate-800 text-white shadow-sm"
+                      : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                  }`}
+                >
+                  <Icon size={20} />
+
+                  <span className="font-medium">
+                    {link.label}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Admin */}
+        {user?.role === "ADMIN" && (
+          <div>
+            <div className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Admin
+            </div>
+
+            <div className="space-y-2">
+              {adminLinks.map((link) => {
+                const Icon = link.icon;
+
+                const active =
+                  pathname === link.href ||
+                  pathname.startsWith(
+                    link.href + "/"
+                  );
+
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 ${
+                      active
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                    }`}
+                  >
+                    <Icon size={20} />
+
+                    <span className="font-medium">
+                      {link.label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
       </nav>
 
       {/* User Profile */}
       <div className="border-t border-slate-800 p-4">
         <div className="flex items-center gap-3 rounded-xl bg-slate-800 p-3">
+
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
             {initials}
           </div>
@@ -182,11 +272,15 @@ export default function Sidebar() {
             </p>
 
             <p className="text-xs text-slate-400">
-              {user ? roleLabels[user.role] : ""}
+              {user
+                ? roleLabels[user.role]
+                : ""}
             </p>
           </div>
+
         </div>
       </div>
+
     </aside>
   );
 }

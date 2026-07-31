@@ -1,34 +1,64 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
-const STORE_ID = "cmrj98gz70000mneof8jfrrlv";
+import { cookies } from "next/headers";
+import { verifySession } from "@/lib/auth";
 
 export async function POST(request, { params }) {
   try {
     const { id } = await params;
     const body = await request.json();
 
-    const productId = body.productId;
+    const productId = String(body.productId || "");
     const quantity = Number(body.quantity || 1);
 
-    if (!productId || quantity <= 0) {
+    if (
+      !productId ||
+      !Number.isInteger(quantity) ||
+      quantity <= 0
+    ) {
       return NextResponse.json(
         {
-          error: "Product and valid quantity are required.",
+          error:
+            "Product and valid quantity are required.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
+    // ----------------------------------------------------
+    // Authenticated user's store
+    // ----------------------------------------------------
+    const cookieStore = await cookies();
+    const token = cookieStore.get("session")?.value;
+
+    if (!token) {
+      return NextResponse.json(
+        { error: "Unauthorized." },
+        { status: 401 }
+      );
+    }
+
+    const session = await verifySession(token);
+
+    if (!session?.storeId) {
+      return NextResponse.json(
+        { error: "Invalid session." },
+        { status: 401 }
+      );
+    }
+
+    const storeId = String(session.storeId);
+
     const result = await prisma.$transaction(
       async (tx) => {
+        // ------------------------------------------------
+        // Find open running bill
+        // ------------------------------------------------
         const bill =
           await tx.runningBill.findFirst({
             where: {
               id,
-              storeId: STORE_ID,
+              storeId,
               status: "OPEN",
             },
           });
@@ -39,6 +69,9 @@ export async function POST(request, { params }) {
           );
         }
 
+        // ------------------------------------------------
+        // Find product
+        // ------------------------------------------------
         const product =
           await tx.product.findUnique({
             where: {
@@ -50,39 +83,106 @@ export async function POST(request, { params }) {
           throw new Error("Product not found.");
         }
 
+        // ------------------------------------------------
+        // Store settings
+        // ------------------------------------------------
         const settings =
           await tx.storeSettings.findUnique({
             where: {
-              storeId: STORE_ID,
+              storeId,
             },
           });
 
+        const shouldDeductStock =
+          settings?.trackInventory !== false &&
+          settings?.autoDeductStock !== false;
+
+        const allowNegative =
+          settings?.allowNegativeStock === true;
+
+        // ------------------------------------------------
+        // Inventory
+        // ------------------------------------------------
         const inventory =
           await tx.inventory.findUnique({
             where: {
               storeId_productId: {
-                storeId: STORE_ID,
+                storeId,
                 productId,
               },
             },
           });
 
-        const currentStock = inventory?.quantity ?? 0;
-
         if (
-          settings?.trackInventory !== false &&
-          settings?.autoDeductStock !== false &&
-          !settings?.allowNegativeStock &&
-          currentStock < quantity
+          shouldDeductStock &&
+          !inventory
         ) {
           throw new Error(
-            `Only ${currentStock} ${product.unit} available.`
+            `Inventory not found for ${product.name}.`
           );
         }
 
-        const unitPrice = Number(product.price);
-        const subtotal = unitPrice * quantity;
+        const currentStock =
+          inventory?.quantity ?? 0;
 
+        // ------------------------------------------------
+        // ATOMIC STOCK DECREMENT
+        // ------------------------------------------------
+        if (shouldDeductStock) {
+          if (!allowNegative) {
+            const updatedInventory =
+              await tx.inventory.updateMany({
+                where: {
+                  storeId,
+                  productId,
+                  quantity: {
+                    gte: quantity,
+                  },
+                },
+
+                data: {
+                  quantity: {
+                    decrement: quantity,
+                  },
+                },
+              });
+
+            if (updatedInventory.count !== 1) {
+              throw new Error(
+                `Only ${currentStock} ${product.unit} ` +
+                `${product.name} available in stock.`
+              );
+            }
+          } else {
+            await tx.inventory.update({
+              where: {
+                storeId_productId: {
+                  storeId,
+                  productId,
+                },
+              },
+
+              data: {
+                quantity: {
+                  decrement: quantity,
+                },
+              },
+            });
+          }
+        }
+
+        // ------------------------------------------------
+        // Prices
+        // ------------------------------------------------
+        const unitPrice =
+          Number(product.price);
+
+        const unitCost =
+          Number(product.costPrice);
+
+        // ------------------------------------------------
+        // Existing running-bill item
+        // ------------------------------------------------
         const existingItem =
           await tx.runningBillItem.findFirst({
             where: {
@@ -94,6 +194,10 @@ export async function POST(request, { params }) {
         let item;
 
         if (existingItem) {
+          const newQuantity =
+            existingItem.quantity +
+            quantity;
+
           item =
             await tx.runningBillItem.update({
               where: {
@@ -101,12 +205,14 @@ export async function POST(request, { params }) {
               },
 
               data: {
-                quantity:
-                  existingItem.quantity + quantity,
+                quantity: newQuantity,
 
+                // Keep historical unit cost
+                // from when the item was first added.
                 subtotal:
-                  Number(existingItem.unitPrice) *
-                  (existingItem.quantity + quantity),
+                  Number(
+                    existingItem.unitPrice
+                  ) * newQuantity,
               },
             });
         } else {
@@ -117,40 +223,33 @@ export async function POST(request, { params }) {
                 productId,
                 quantity,
                 unitPrice,
-                subtotal,
+                unitCost,
+                subtotal:
+                  unitPrice * quantity,
               },
             });
         }
 
-        if (
-          settings?.trackInventory !== false &&
-          settings?.autoDeductStock !== false
-        ) {
-          await tx.inventory.update({
-            where: {
-              storeId_productId: {
-                storeId: STORE_ID,
-                productId,
-              },
-            },
-            data: {
-              quantity: {
-                decrement: quantity,
-              },
-            },
-          });
-
+        // ------------------------------------------------
+        // Record inventory movement
+        // ------------------------------------------------
+        if (shouldDeductStock) {
           await tx.inventoryMovement.create({
             data: {
-              storeId: STORE_ID,
+              storeId,
               productId,
               type: "RUNNING_BILL",
               quantity: -quantity,
-              reason: `Added to running bill ${id}`,
+              reason:
+                `Added ${quantity} ${product.name} ` +
+                `to running bill ${id}`,
             },
           });
         }
 
+        // ------------------------------------------------
+        // Recalculate running-bill total
+        // ------------------------------------------------
         const aggregate =
           await tx.runningBillItem.aggregate({
             where: {
@@ -163,7 +262,9 @@ export async function POST(request, { params }) {
           });
 
         const total =
-          Number(aggregate._sum.subtotal || 0);
+          Number(
+            aggregate._sum.subtotal || 0
+          );
 
         await tx.runningBill.update({
           where: {
@@ -199,9 +300,7 @@ export async function POST(request, { params }) {
             ? error.message
             : "Failed to add item.",
       },
-      {
-        status: 400,
-      }
+      { status: 400 }
     );
   }
 }

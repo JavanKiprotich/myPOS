@@ -43,7 +43,7 @@ export default function ProductPanel({
       <input
         ref={barcodeRef}
         type="text"
-        placeholder="Scan barcode..."
+        placeholder="Enter Barcode..."
         value={barcode}
         onChange={(e) => {
           const value = e.target.value;
