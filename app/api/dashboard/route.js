@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentStoreId } from "@/lib/store";
 
 export async function GET() {
   try {
+    const storeId = await getCurrentStoreId();
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -12,6 +15,7 @@ export async function GET() {
         total: true,
       },
       where: {
+        storeId,
         createdAt: {
           gte: today,
         },
@@ -21,14 +25,19 @@ export async function GET() {
     // Today's Transactions
     const todayTransactions = await prisma.sale.count({
       where: {
+        storeId,
         createdAt: {
           gte: today,
         },
       },
     });
 
-    // Products
-    const totalProducts = await prisma.product.count();
+    // Products in current store
+    const totalProducts = await prisma.inventory.count({
+      where: {
+        storeId,
+      },
+    });
 
     // Customers
     const totalCustomers = await prisma.customer.count();
@@ -43,6 +52,9 @@ export async function GET() {
 
     // Inventory Value
     const inventory = await prisma.inventory.findMany({
+      where: {
+        storeId,
+      },
       include: {
         product: true,
       },
@@ -50,24 +62,25 @@ export async function GET() {
 
     const inventoryValue = inventory.reduce(
       (sum, item) =>
-        sum +
-        item.quantity *
-          Number(item.product.price),
+        sum + item.quantity * Number(item.product.price),
       0
     );
 
     // Store Settings
     const settings =
-      await prisma.storeSettings.findFirst();
+      await prisma.storeSettings.findUnique({
+        where: {
+          storeId,
+        },
+      });
 
     // Low Stock
     const lowStock =
       await prisma.inventory.findMany({
         where: {
+          storeId,
           quantity: {
-            lte:
-              settings?.lowStockAlert ??
-              5,
+            lte: settings?.lowStockAlert ?? 5,
           },
         },
         include: {
@@ -81,6 +94,9 @@ export async function GET() {
     // Recent Sales
     const recentSales =
       await prisma.sale.findMany({
+        where: {
+          storeId,
+        },
         orderBy: {
           createdAt: "desc",
         },
@@ -99,6 +115,9 @@ export async function GET() {
           amount: true,
         },
         where: {
+          sale: {
+            storeId,
+          },
           createdAt: {
             gte: today,
           },
@@ -126,41 +145,47 @@ export async function GET() {
         )?._sum.amount
       ) || 0;
 
-      // Weekly Sales (Last 7 Days)
-const weeklySales = [];
+    // Weekly Sales
+    const weeklySales = [];
 
-for (let i = 6; i >= 0; i--) {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  start.setDate(start.getDate() - i);
+    for (let i = 6; i >= 0; i--) {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      start.setDate(start.getDate() - i);
 
-  const end = new Date(start);
-  end.setDate(end.getDate() + 1);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
 
-  const sales = await prisma.sale.aggregate({
-    _sum: {
-      total: true,
-    },
-    where: {
-      createdAt: {
-        gte: start,
-        lt: end,
-      },
-    },
-  });
+      const sales = await prisma.sale.aggregate({
+        _sum: {
+          total: true,
+        },
+        where: {
+          storeId,
+          createdAt: {
+            gte: start,
+            lt: end,
+          },
+        },
+      });
 
-  weeklySales.push({
-    day: start.toLocaleDateString("en-US", {
-      weekday: "short",
-    }),
-    sales: Number(sales._sum.total) || 0,
-  });
-}
+      weeklySales.push({
+        day: start.toLocaleDateString("en-US", {
+          weekday: "short",
+        }),
+        sales: Number(sales._sum.total) || 0,
+      });
+    }
 
-    // Top Selling Products
+    // Top Products
     const groupedProducts =
       await prisma.saleItem.groupBy({
         by: ["productId"],
+        where: {
+          sale: {
+            storeId,
+          },
+        },
         _sum: {
           quantity: true,
         },
@@ -172,66 +197,49 @@ for (let i = 6; i >= 0; i--) {
         take: 5,
       });
 
-    const topProducts =
-      await Promise.all(
-        groupedProducts.map(async (item) => {
-          const product =
-            await prisma.product.findUnique({
-              where: {
-                id: item.productId,
-              },
-            });
+    const topProducts = await Promise.all(
+      groupedProducts.map(async (item) => {
+        const product =
+          await prisma.product.findUnique({
+            where: {
+              id: item.productId,
+            },
+          });
 
-          return {
-            productId: item.productId,
-            quantity:
-              item._sum.quantity || 0,
-            product,
-          };
-        })
-      );
+        return {
+          productId: item.productId,
+          quantity: item._sum.quantity || 0,
+          product,
+        };
+      })
+    );
 
     return NextResponse.json({
-      todaySales:
-        Number(todaySales._sum.total) || 0,
-
+      todaySales: Number(todaySales._sum.total) || 0,
       todayTransactions,
-
       totalProducts,
-
       totalCustomers,
-
       outstandingCredit:
-        Number(
-          outstandingCredit._sum.balance
-        ) || 0,
-
+        Number(outstandingCredit._sum.balance) || 0,
       inventoryValue,
-
       cashSales,
-
       mpesaSales,
-
       creditSales,
-
       recentSales,
-
       lowStock,
-
       topProducts,
-
       weeklySales,
     });
   } catch (error) {
     console.error(error);
 
-     return NextResponse.json(
-    {
-      error: error.message,
-    },
-    {
-      status: 500,
-    }
-  );
+    return NextResponse.json(
+      {
+        error: error.message,
+      },
+      {
+        status: 500,
+      }
+    );
   }
 }

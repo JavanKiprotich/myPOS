@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
-const STORE_ID = "cmrj98gz70000mneof8jfrrlv";
+import { getCurrentStoreId } from "@/lib/store";
 
 export async function GET(request, { params }) {
   try {
+    const storeId = await getCurrentStoreId();
     const { barcode } = await params;
 
     const product = await prisma.product.findFirst({
@@ -14,7 +14,7 @@ export async function GET(request, { params }) {
       include: {
         inventory: {
           where: {
-            storeId: STORE_ID,
+            storeId,
           },
         },
       },

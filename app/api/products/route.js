@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const STORE_ID = "cmrj98gz70000mneof8jfrrlv"; // Replace later with logged-in user's store
+import { getCurrentStoreId } from "@/lib/store";
 
 export async function GET() {
   try {
+    const storeId = await getCurrentStoreId();
+
     const products = await prisma.product.findMany({
       orderBy: {
         name: "asc",
@@ -13,7 +15,7 @@ export async function GET() {
       include: {
         inventory: {
           where: {
-            storeId: STORE_ID,
+            storeId,
           },
         },
       },
@@ -53,6 +55,9 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+
+const storeId = await getCurrentStoreId();
+
     const body = await request.json();
 
     // Check duplicate SKU
@@ -107,7 +112,7 @@ export async function POST(request) {
 
         inventory: {
           create: {
-            storeId: STORE_ID,
+            storeId,
             quantity: 0,
           },
         },

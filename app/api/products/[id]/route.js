@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentStoreId } from "@/lib/store";
 
-const STORE_ID = "cmrj98gz70000mneof8jfrrlv";
+
 
 export async function GET(request, { params }) {
   try {
+
+const storeId = await getCurrentStoreId();
+
     const { id } = await params;
 
     const product = await prisma.product.findUnique({
@@ -14,7 +18,7 @@ export async function GET(request, { params }) {
       include: {
         inventory: {
           where: {
-            storeId: STORE_ID,
+            storeId,
           },
           select: {
             quantity: true,
@@ -75,6 +79,9 @@ export async function GET(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
+
+const storeId = await getCurrentStoreId();
+
     const { id } = await params;
     const body = await request.json();
 
@@ -200,6 +207,7 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
+    const storeId = await getCurrentStoreId();
     const { id } = await params;
 
     const saleItem =

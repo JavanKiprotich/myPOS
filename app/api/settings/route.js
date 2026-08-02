@@ -1,20 +1,23 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const STORE_ID = "cmrj98gz70000mneof8jfrrlv";
+import { getCurrentStoreId } from "@/lib/store";
 
 export async function GET() {
   try {
+
+const storeId = await getCurrentStoreId();
+
     let settings = await prisma.storeSettings.findUnique({
       where: {
-        storeId: STORE_ID,
+        storeId,
       },
     });
 
     if (!settings) {
       settings = await prisma.storeSettings.create({
         data: {
-          storeId: STORE_ID,
+          storeId,
         },
       });
     }
@@ -34,15 +37,18 @@ export async function GET() {
 
 export async function PUT(request) {
   try {
+
+const storeId = await getCurrentStoreId();
+
     const body = await request.json();
 
     const settings = await prisma.storeSettings.upsert({
       where: {
-        storeId: STORE_ID,
+        storeId,
       },
       update: body,
       create: {
-        storeId: STORE_ID,
+        storeId,
         ...body,
       },
     });

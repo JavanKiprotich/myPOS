@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const STORE_ID = "cmrj98gz70000mneof8jfrrlv";
+import { getCurrentStoreId } from "@/lib/store";
 
 export async function GET(request) {
   try {
+const storeId = await getCurrentStoreId();
+
     const { searchParams } = new URL(request.url);
 
     const q = searchParams.get("q")?.trim() || "";
@@ -63,7 +65,7 @@ export async function GET(request) {
 
             inventory: {
               where: {
-                storeId: STORE_ID,
+                storeId,
               },
 
               select: {
@@ -112,7 +114,7 @@ export async function GET(request) {
 
         prisma.sale.findMany({
           where: {
-            storeId: STORE_ID,
+            storeId,
 
             OR: [
               {

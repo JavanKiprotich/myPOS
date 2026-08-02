@@ -1,12 +1,20 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentStoreId } from "@/lib/store";
 
 export async function GET() {
   try {
+    const storeId = await getCurrentStoreId();
+
     const customers = await prisma.customer.findMany({
+      where: {
+        storeId,
+      },
+
       include: {
         creditAccount: true,
       },
+
       orderBy: {
         name: "asc",
       },
@@ -29,6 +37,8 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const storeId = await getCurrentStoreId();
+
     const body = await request.json();
 
     const name = String(body.name || "").trim();
@@ -56,9 +66,11 @@ export async function POST(request) {
       );
     }
 
+    // Phone only needs to be unique within this store
     const existingCustomer =
-      await prisma.customer.findUnique({
+      await prisma.customer.findFirst({
         where: {
+          storeId,
           phone,
         },
       });
@@ -78,6 +90,7 @@ export async function POST(request) {
     const customer =
       await prisma.customer.create({
         data: {
+          storeId,
           name,
           phone,
         },
@@ -87,12 +100,9 @@ export async function POST(request) {
         },
       });
 
-    return NextResponse.json(
-      customer,
-      {
-        status: 201,
-      }
-    );
+    return NextResponse.json(customer, {
+      status: 201,
+    });
   } catch (error) {
     console.error("Customers POST error:", error);
 

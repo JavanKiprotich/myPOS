@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const STORE_ID = "cmrj98gz70000mneof8jfrrlv";
+import { getCurrentStoreId } from "@/lib/store";
 
 export async function GET() {
   try {
+
+
+    const storeId = await getCurrentStoreId();
+
     const bills = await prisma.runningBill.findMany({
       where: {
-        storeId: STORE_ID,
+        storeId,
         status: "OPEN",
       },
       orderBy: {
@@ -82,6 +86,9 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+
+const storeId = await getCurrentStoreId();
+
     const body = await request.json();
 
     const name = String(body.name || "").trim();
@@ -127,7 +134,7 @@ export async function POST(request) {
 
     const bill = await prisma.runningBill.create({
       data: {
-        storeId: STORE_ID,
+        storeId,
         customerId,
         name,
         phone: body.phone

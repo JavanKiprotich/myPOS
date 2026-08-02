@@ -20,6 +20,7 @@ model Store {
   sales        Sale[]
   settings     StoreSettings?
   users        User[]
+  customers Customer[]
 }
 
 model User {
@@ -67,12 +68,20 @@ model Inventory {
 
 model Customer {
   id            String         @id @default(cuid())
+
+  storeId       String?
+  store         Store?         @relation(fields: [storeId], references: [id])
+
   name          String
-  phone         String         @unique
+  phone         String
+
   createdAt     DateTime       @default(now())
+
   creditAccount CreditAccount?
   runningBills  RunningBill[]
   sales         Sale[]
+
+  @@unique([storeId, phone])
 }
 
 model Sale {

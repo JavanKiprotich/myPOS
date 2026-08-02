@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const STORE_ID = "cmrj98gz70000mneof8jfrrlv";
+import { getCurrentStoreId } from "@/lib/store";
 
 export async function GET(request, { params }) {
   try {
+    const storeId = await getCurrentStoreId();
     const { id } = await params;
 
     const bill = await prisma.runningBill.findFirst({
       where: {
         id,
-        storeId: STORE_ID,
+        storeId,
       },
 
       include: {
@@ -29,7 +30,7 @@ export async function GET(request, { params }) {
 
   inventory: {
           where: {
-            storeId: STORE_ID,
+            storeId,
           },
           select: {
             quantity: true,

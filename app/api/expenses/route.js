@@ -1,32 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
-import { verifySession } from "@/lib/auth";
+import { getCurrentStoreId } from "@/lib/store";
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("session")?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    const session = await verifySession(token);
-
-    if (!session?.storeId) {
-      return NextResponse.json(
-        { error: "Invalid session." },
-        { status: 401 }
-      );
-    }
+    const storeId = await getCurrentStoreId();
 
     const expenses = await prisma.expense.findMany({
       where: {
-        storeId: String(session.storeId),
+        storeId,
       },
       orderBy: {
         createdAt: "desc",
@@ -50,24 +32,7 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("session")?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    const session = await verifySession(token);
-
-    if (!session?.storeId) {
-      return NextResponse.json(
-        { error: "Invalid session." },
-        { status: 401 }
-      );
-    }
+    const storeId = await getCurrentStoreId();
 
     const body = await request.json();
 
@@ -116,19 +81,16 @@ export async function POST(request) {
 
     const expense = await prisma.expense.create({
       data: {
-        storeId: String(session.storeId),
+        storeId,
         category,
         description,
         amount,
       },
     });
 
-    return NextResponse.json(
-      expense,
-      {
-        status: 201,
-      }
-    );
+    return NextResponse.json(expense, {
+      status: 201,
+    });
   } catch (error) {
     console.error("Expenses POST error:", error);
 
