@@ -61,7 +61,7 @@ const [closingPaymentMethod, setClosingPaymentMethod] =
 const [closingBillLoading, setClosingBillLoading] =
   useState(false);
 
-
+const [pendingSaleId, setPendingSaleId] = useState(null);
 
 const [toast, setToast] = useState({
   show: false,
@@ -764,9 +764,65 @@ function formatMpesaPhone(phone: string) {
 
 
   if (paymentMethod === "MPESA") {
-    setShowMpesaModal(true);
+
+  if (cart.length === 0) {
+    playError();
+
+    showToast(
+      "Cart is empty.",
+      "error"
+    );
+
     return;
   }
+
+  try {
+
+    const response = await fetch("/api/sales", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        storeId: user.storeId,
+        cashierId: user.id,
+        customerId: customerId || null,
+        paymentMethod: "MPESA",
+        items: cart.map((item) => ({
+          productId: item.id,
+          quantity: item.quantity,
+          price: Number(item.price),
+        })),
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      showToast(
+        data.error || "Failed to create sale.",
+        "error"
+      );
+      return;
+    }
+
+    setPendingSaleId(data.id);
+
+    setShowMpesaModal(true);
+
+    return;
+
+  } catch (error) {
+    console.error(error);
+
+    showToast(
+      "Could not start M-Pesa payment.",
+      "error"
+    );
+
+    return;
+  }
+}
 
   if (
     paymentMethod === "CREDIT" &&
@@ -850,6 +906,25 @@ function formatMpesaPhone(phone: string) {
     );
   }
 }
+
+async function createSaleBeforeMpesa() {
+  const response = await fetch("/api/sales", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      items: cart,
+      total,
+      paymentMethod: "MPESA",
+    }),
+  });
+
+  const sale = await response.json();
+
+  return sale;
+}
+
 async function sendStkPush() {
   const phone = formatMpesaPhone(mpesaPhone);
 
@@ -859,11 +934,12 @@ async function sendStkPush() {
   }
 
   const response = await fetch("/api/mpesa/stkpush", {
-    method: "POST",
+    method: "POST", 
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
+      saleId: pendingSaleId,
       phone,
       amount: total,
     }),
@@ -871,7 +947,38 @@ async function sendStkPush() {
 
   const data = await response.json();
 
- alert(JSON.stringify(data, null, 2));
+  alert(JSON.stringify(data, null, 2));
+}
+async function handleMpesaPayment() {
+  try {
+const phone = formatMpesaPhone(mpesaPhone);
+
+    const response = await fetch("/api/mpesa/stkpush", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+  saleId: pendingSaleId,
+  phone,
+  amount: total,
+}),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      showToast(data.error || "Failed to send STK Push", "error");
+      return;
+    }
+
+    showToast("STK Push sent successfully.", "success");
+    setShowMpesaModal(false);
+
+  } catch (error) {
+    console.error(error);
+    showToast("Failed to send STK Push.", "error");
+  }
 }
   
   return (
@@ -1273,6 +1380,17 @@ async function sendStkPush() {
 
   </div>
 )}
+
+
+<MpesaModal
+  show={showMpesaModal}
+  total={total} // replace with your total variable
+  mpesaPhone={mpesaPhone}
+  setMpesaPhone={setMpesaPhone}
+  onCancel={() => setShowMpesaModal(false)}
+  onSend={handleMpesaPayment}
+/>
+
 
  <Toast
         show={toast.show}

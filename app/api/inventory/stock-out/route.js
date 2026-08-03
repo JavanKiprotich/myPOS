@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentStoreId } from "@/lib/store";
 
 export async function POST(request) {
   try {
+    const storeId = await getCurrentStoreId();
+
     const body = await request.json();
 
-    const inventory = await prisma.inventory.findFirst({
+    const inventory = await prisma.inventory.findUnique({
       where: {
-        storeId: body.storeId,
-        productId: body.productId,
+        storeId_productId: {
+          storeId,
+          productId: body.productId,
+        },
       },
     });
 
@@ -37,7 +42,10 @@ export async function POST(request) {
     await prisma.$transaction(async (tx) => {
       await tx.inventory.update({
         where: {
-          id: inventory.id,
+          storeId_productId: {
+            storeId,
+            productId: body.productId,
+          },
         },
         data: {
           quantity: {
@@ -48,7 +56,7 @@ export async function POST(request) {
 
       await tx.inventoryMovement.create({
         data: {
-          storeId: body.storeId,
+          storeId,
           productId: body.productId,
           quantity: Number(body.quantity),
           type: "STOCK_OUT",

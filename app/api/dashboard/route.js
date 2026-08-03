@@ -40,7 +40,11 @@ export async function GET() {
     });
 
     // Customers
-    const totalCustomers = await prisma.customer.count();
+    const totalCustomers = await prisma.customer.count({
+  where: {
+    storeId,
+  },
+});
 
     // Outstanding Credit
     const outstandingCredit =

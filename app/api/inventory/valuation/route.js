@@ -1,31 +1,35 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentStoreId } from "@/lib/store";
 
 export async function GET() {
   try {
-    const inventory =
-      await prisma.inventory.findMany({
-        include: {
-          product: true,
-        },
-      });
+    const storeId = await getCurrentStoreId();
+
+    const inventory = await prisma.inventory.findMany({
+      where: {
+        storeId,
+      },
+
+      include: {
+        product: true,
+      },
+    });
 
     let totalValue = 0;
 
-    const items = inventory.map(
-      (item) => {
-        const value =
-          Number(item.product.price) *
-          item.quantity;
+    const items = inventory.map((item) => {
+      const value =
+        Number(item.product.price) *
+        item.quantity;
 
-        totalValue += value;
+      totalValue += value;
 
-        return {
-          ...item,
-          value,
-        };
-      }
-    );
+      return {
+        ...item,
+        value,
+      };
+    });
 
     return NextResponse.json({
       totalValue,
@@ -36,8 +40,7 @@ export async function GET() {
 
     return NextResponse.json(
       {
-        error:
-          "Failed to calculate valuation",
+        error: "Failed to calculate valuation",
       },
       {
         status: 500,

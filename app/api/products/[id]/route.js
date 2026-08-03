@@ -2,13 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentStoreId } from "@/lib/store";
 
-
-
 export async function GET(request, { params }) {
   try {
-
-const storeId = await getCurrentStoreId();
-
+    const storeId = await getCurrentStoreId();
     const { id } = await params;
 
     const product = await prisma.product.findUnique({
@@ -50,18 +46,14 @@ const storeId = await getCurrentStoreId();
       costPrice: Number(product.costPrice),
       sellingPrice: Number(product.price),
 
-      stock:
-        product.inventory[0]?.quantity ?? 0,
+      stock: product.inventory[0]?.quantity ?? 0,
 
       inventory: product.inventory,
 
       createdAt: product.createdAt,
     });
   } catch (error) {
-    console.error(
-      "Product GET error:",
-      error
-    );
+    console.error("Product GET error:", error);
 
     return NextResponse.json(
       {
@@ -79,18 +71,16 @@ const storeId = await getCurrentStoreId();
 
 export async function PUT(request, { params }) {
   try {
-
-const storeId = await getCurrentStoreId();
+    await getCurrentStoreId();
 
     const { id } = await params;
     const body = await request.json();
 
-    const existingProduct =
-      await prisma.product.findUnique({
-        where: {
-          id,
-        },
-      });
+    const existingProduct = await prisma.product.findUnique({
+      where: {
+        id,
+      },
+    });
 
     if (!existingProduct) {
       return NextResponse.json(
@@ -103,15 +93,14 @@ const storeId = await getCurrentStoreId();
       );
     }
 
-    const duplicateSku =
-      await prisma.product.findFirst({
-        where: {
-          sku: body.sku,
-          NOT: {
-            id,
-          },
+    const duplicateSku = await prisma.product.findFirst({
+      where: {
+        sku: body.sku,
+        NOT: {
+          id,
         },
-      });
+      },
+    });
 
     if (duplicateSku) {
       return NextResponse.json(
@@ -125,21 +114,19 @@ const storeId = await getCurrentStoreId();
     }
 
     if (body.barcode) {
-      const duplicateBarcode =
-        await prisma.product.findFirst({
-          where: {
-            barcode: body.barcode,
-            NOT: {
-              id,
-            },
+      const duplicateBarcode = await prisma.product.findFirst({
+        where: {
+          barcode: body.barcode,
+          NOT: {
+            id,
           },
-        });
+        },
+      });
 
       if (duplicateBarcode) {
         return NextResponse.json(
           {
-            error:
-              "Barcode already exists.",
+            error: "Barcode already exists.",
           },
           {
             status: 400,
@@ -148,28 +135,21 @@ const storeId = await getCurrentStoreId();
       }
     }
 
-    const updatedProduct =
-      await prisma.product.update({
-        where: {
-          id,
-        },
+    const updatedProduct = await prisma.product.update({
+      where: {
+        id,
+      },
 
-        data: {
-          name: body.name,
-          sku: body.sku,
-          barcode: body.barcode || null,
-          category: body.category,
-          unit: body.unit,
-
-          costPrice: Number(
-            body.costPrice
-          ),
-
-          price: Number(
-            body.sellingPrice
-          ),
-        },
-      });
+      data: {
+        name: body.name,
+        sku: body.sku,
+        barcode: body.barcode || null,
+        category: body.category,
+        unit: body.unit,
+        costPrice: Number(body.costPrice),
+        price: Number(body.sellingPrice),
+      },
+    });
 
     return NextResponse.json({
       id: updatedProduct.id,
@@ -178,18 +158,11 @@ const storeId = await getCurrentStoreId();
       barcode: updatedProduct.barcode,
       category: updatedProduct.category,
       unit: updatedProduct.unit,
-      costPrice: Number(
-        updatedProduct.costPrice
-      ),
-      sellingPrice: Number(
-        updatedProduct.price
-      ),
+      costPrice: Number(updatedProduct.costPrice),
+      sellingPrice: Number(updatedProduct.price),
     });
   } catch (error) {
-    console.error(
-      "Product PUT error:",
-      error
-    );
+    console.error("Product PUT error:", error);
 
     return NextResponse.json(
       {
@@ -210,12 +183,12 @@ export async function DELETE(request, { params }) {
     const storeId = await getCurrentStoreId();
     const { id } = await params;
 
-    const saleItem =
-      await prisma.saleItem.findFirst({
-        where: {
-          productId: id,
-        },
-      });
+    // Prevent deleting products with sales
+    const saleItem = await prisma.saleItem.findFirst({
+      where: {
+        productId: id,
+      },
+    });
 
     if (saleItem) {
       return NextResponse.json(
@@ -229,32 +202,43 @@ export async function DELETE(request, { params }) {
       );
     }
 
+    // Remove THIS STORE'S inventory only
     await prisma.inventory.deleteMany({
       where: {
         productId: id,
+        storeId,
       },
     });
 
+    // Remove THIS STORE'S inventory movements only
     await prisma.inventoryMovement.deleteMany({
+      where: {
+        productId: id,
+        storeId,
+      },
+    });
+
+    // Check whether another store still has this product
+    const remainingInventory = await prisma.inventory.count({
       where: {
         productId: id,
       },
     });
 
-    await prisma.product.delete({
-      where: {
-        id,
-      },
-    });
+    // Delete shared product only if no store uses it anymore
+    if (remainingInventory === 0) {
+      await prisma.product.delete({
+        where: {
+          id,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,
     });
   } catch (error) {
-    console.error(
-      "Product DELETE error:",
-      error
-    );
+    console.error("Product DELETE error:", error);
 
     return NextResponse.json(
       {

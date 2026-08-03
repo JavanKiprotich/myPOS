@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
 import { getCurrentStoreId } from "@/lib/store";
 
 export async function GET(request) {
   try {
-const storeId = await getCurrentStoreId();
+    const storeId = await getCurrentStoreId();
 
     const { searchParams } = new URL(request.url);
 
@@ -21,140 +20,146 @@ const storeId = await getCurrentStoreId();
 
     const search = q.toLowerCase();
 
-    const [products, customers, sales] =
-      await Promise.all([
-        prisma.product.findMany({
-          where: {
-            OR: [
-              {
+    const [products, customers, sales] = await Promise.all([
+      prisma.product.findMany({
+        where: {
+          inventory: {
+            some: {
+              storeId,
+            },
+          },
+
+          OR: [
+            {
+              name: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+            {
+              sku: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+            {
+              barcode: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+          ],
+        },
+
+        orderBy: {
+          name: "asc",
+        },
+
+        take: 8,
+
+        select: {
+          id: true,
+          name: true,
+          sku: true,
+          barcode: true,
+          category: true,
+          unit: true,
+          price: true,
+          costPrice: true,
+
+          inventory: {
+            where: {
+              storeId,
+            },
+            select: {
+              quantity: true,
+            },
+          },
+        },
+      }),
+
+      prisma.customer.findMany({
+        where: {
+          storeId,
+
+          OR: [
+            {
+              name: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+            {
+              phone: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+          ],
+        },
+
+        orderBy: {
+          name: "asc",
+        },
+
+        take: 8,
+
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+
+          creditAccount: {
+            select: {
+              balance: true,
+            },
+          },
+        },
+      }),
+
+      prisma.sale.findMany({
+        where: {
+          storeId,
+
+          OR: [
+            {
+              id: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+            {
+              customer: {
                 name: {
                   contains: search,
                   mode: "insensitive",
                 },
               },
-              {
-                sku: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                barcode: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-            ],
-          },
+            },
+          ],
+        },
 
-          orderBy: {
-            name: "asc",
-          },
+        orderBy: {
+          createdAt: "desc",
+        },
 
-          take: 8,
+        take: 8,
 
-          select: {
-            id: true,
-            name: true,
-            sku: true,
-            barcode: true,
-            category: true,
-            unit: true,
-            price: true,
-            costPrice: true,
+        select: {
+          id: true,
+          total: true,
+          status: true,
+          createdAt: true,
 
-            inventory: {
-              where: {
-                storeId,
-              },
-
-              select: {
-                quantity: true,
-              },
+          customer: {
+            select: {
+              id: true,
+              name: true,
             },
           },
-        }),
-
-        prisma.customer.findMany({
-          where: {
-            OR: [
-              {
-                name: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                phone: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-            ],
-          },
-
-          orderBy: {
-            name: "asc",
-          },
-
-          take: 8,
-
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-
-            creditAccount: {
-              select: {
-                balance: true,
-              },
-            },
-          },
-        }),
-
-        prisma.sale.findMany({
-          where: {
-            storeId,
-
-            OR: [
-              {
-                id: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                customer: {
-                  name: {
-                    contains: search,
-                    mode: "insensitive",
-                  },
-                },
-              },
-            ],
-          },
-
-          orderBy: {
-            createdAt: "desc",
-          },
-
-          take: 8,
-
-          select: {
-            id: true,
-            total: true,
-            status: true,
-            createdAt: true,
-
-            customer: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        }),
-      ]);
+        },
+      }),
+    ]);
 
     return NextResponse.json({
       products: products.map((product) => ({
@@ -166,8 +171,7 @@ const storeId = await getCurrentStoreId();
         unit: product.unit,
         sellingPrice: Number(product.price),
         costPrice: Number(product.costPrice),
-        stock:
-          product.inventory[0]?.quantity ?? 0,
+        stock: product.inventory[0]?.quantity ?? 0,
       })),
 
       customers: customers.map((customer) => ({

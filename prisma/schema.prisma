@@ -69,8 +69,8 @@ model Inventory {
 model Customer {
   id            String         @id @default(cuid())
 
-  storeId       String?
-  store         Store?         @relation(fields: [storeId], references: [id])
+  storeId       String
+  store         Store          @relation(fields: [storeId], references: [id])
 
   name          String
   phone         String
@@ -83,6 +83,7 @@ model Customer {
 
   @@unique([storeId, phone])
 }
+
 
 model Sale {
   id         String     @id @default(cuid())
@@ -113,14 +114,25 @@ model SaleItem {
 }
 
 model Payment {
-  id        String        @id @default(cuid())
-  saleId    String
-  method    PaymentMethod
-  amount    Decimal       @db.Decimal(10, 2)
-  status    PaymentStatus @default(PENDING)
-  reference String?
-  createdAt DateTime      @default(now())
-  sale      Sale          @relation(fields: [saleId], references: [id])
+  id                String   @id @default(cuid())
+
+  saleId            String
+
+  method            PaymentMethod
+  amount            Decimal  @db.Decimal(10,2)
+  status            PaymentStatus
+
+  phone             String?
+
+  checkoutRequestId String?
+  merchantRequestId String?
+  mpesaReceipt      String?
+
+  createdAt         DateTime @default(now())
+
+  sale Sale @relation(fields: [saleId], references: [id])
+
+  @@index([checkoutRequestId])
 }
 
 model CreditAccount {

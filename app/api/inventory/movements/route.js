@@ -1,26 +1,36 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentStoreId } from "@/lib/store";
 
 export async function GET() {
   try {
-    const movements =
-      await prisma.inventoryMovement.findMany({
-        include: {
-          product: true,
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
+    const storeId = await getCurrentStoreId();
 
-    return NextResponse.json(
-      movements
-    );
+    const movements = await prisma.inventoryMovement.findMany({
+      where: {
+        storeId,
+      },
+
+      include: {
+        product: true,
+      },
+
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return NextResponse.json(movements);
   } catch (error) {
     console.error(error);
 
-    return NextResponse.json([], {
-      status: 200,
-    });
+    return NextResponse.json(
+      {
+        error: "Failed to fetch inventory movements.",
+      },
+      {
+        status: 500,
+      }
+    );
   }
 }

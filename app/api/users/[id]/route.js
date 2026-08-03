@@ -30,9 +30,12 @@ export async function PUT(request, { params }) {
       );
     }
 
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findFirst({
       where: {
         id,
+        ...(session.role !== "ADMIN"
+          ? { storeId: session.storeId }
+          : {}),
       },
     });
 
@@ -43,25 +46,27 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // Admins can assign users to any store.
-    // Other roles remain restricted to their own store.
-    const storeId =
-      session.role === "ADMIN" && body.storeId
-        ? body.storeId
-        : session.storeId;
+    let storeId = existingUser.storeId;
 
-    // Verify that the selected store exists.
-    const store = await prisma.store.findUnique({
-      where: {
-        id: storeId,
-      },
-    });
+    if (session.role === "ADMIN" && body.storeId) {
+      const store = await prisma.store.findUnique({
+        where: {
+          id: body.storeId,
+        },
+      });
 
-    if (!store) {
-      return NextResponse.json(
-        { error: "Selected store not found." },
-        { status: 400 }
-      );
+      if (!store) {
+        return NextResponse.json(
+          {
+            error: "Selected store not found.",
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+      storeId = body.storeId;
     }
 
     const updateData = {
@@ -141,31 +146,40 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    // Prevent changing your own status
     if (session.id === id) {
       return NextResponse.json(
         {
           error:
             "You cannot deactivate or activate your own account.",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
-    const targetUser = await prisma.user.findUnique({
+    const targetUser = await prisma.user.findFirst({
       where: {
         id,
+        ...(session.role !== "ADMIN"
+          ? {
+              storeId: session.storeId,
+            }
+          : {}),
       },
     });
 
     if (!targetUser) {
       return NextResponse.json(
-        { error: "User not found." },
-        { status: 404 }
+        {
+          error: "User not found.",
+        },
+        {
+          status: 404,
+        }
       );
     }
 
-    // Prevent disabling the last active administrator
     if (
       targetUser.role === "ADMIN" &&
       targetUser.active
@@ -183,7 +197,9 @@ export async function DELETE(request, { params }) {
             error:
               "Cannot deactivate the last active administrator.",
           },
-          { status: 400 }
+          {
+            status: 400,
+          }
         );
       }
     }
@@ -204,7 +220,9 @@ export async function DELETE(request, { params }) {
         : "USER_DEACTIVATED",
       target: targetUser.name,
       details: `Status changed to ${
-        updatedUser.active ? "Active" : "Disabled"
+        updatedUser.active
+          ? "Active"
+          : "Disabled"
       }`,
     });
 

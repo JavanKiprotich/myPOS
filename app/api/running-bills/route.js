@@ -111,9 +111,11 @@ const storeId = await getCurrentStoreId();
       const phone = String(body.phone).trim();
 
       const existingCustomer =
-        await prisma.customer.findUnique({
+        await prisma.customer.findFirst({
           where: {
+            storeId,
             phone,
+            
           },
         });
 
@@ -125,6 +127,7 @@ const storeId = await getCurrentStoreId();
             data: {
               name,
               phone,
+              storeId,
             },
           });
 
