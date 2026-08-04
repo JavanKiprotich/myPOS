@@ -34,10 +34,49 @@ export async function POST(request) {
 
     const accessToken = await getAccessToken();
 
-    const { password, timestamp } =
-      generatePassword();
+    const { password, timestamp } = generatePassword();
+
+console.log("========== STK REQUEST ==========");
+console.log("Shortcode:", process.env.MPESA_SHORTCODE);
+console.log("Timestamp:", timestamp);
+console.log("Passkey length:", process.env.MPESA_PASSKEY?.length);
+console.log("Password length:", password.length);
+console.log("Phone:", phone);
+console.log("Amount:", amount);
+console.log("Callback URL:", process.env.MPESA_CALLBACK_URL);
+
+
+
+
+
+
+const payload = {
+  BusinessShortCode: process.env.MPESA_SHORTCODE,
+  Password: password,
+  Timestamp: timestamp,
+  TransactionType: "CustomerPayBillOnline",
+  Amount: Number(amount),
+  PartyA: phone,
+  PartyB: process.env.MPESA_SHORTCODE,
+  PhoneNumber: phone,
+  CallBackURL: process.env.MPESA_CALLBACK_URL,
+  AccountReference: saleId,
+  TransactionDesc: "Liquor POS Payment",
+};
+
+console.log("Payload:", payload);
+
+
 
     const response = await fetch(
+
+
+
+
+
+
+
+      
       `${BASE_URL}/mpesa/stkpush/v1/processrequest`,
       {
         method: "POST",
@@ -79,18 +118,23 @@ export async function POST(request) {
     );
 
     const data = await response.json();
+console.log("HTTP STATUS:", response.status);
+console.log("SAFARICOM RESPONSE:", JSON.stringify(data, null, 2));
 
-    if (data.ResponseCode !== "0") {
-      return NextResponse.json(
-        {
-          success: false,
-          message: data.ResponseDescription,
-        },
-        {
-          status: 400,
-        }
-      );
+
+   if (data.ResponseCode !== "0") {
+  console.log("STK FAILED:", data);
+
+  return NextResponse.json(
+    {
+      success: false,
+      data,
+    },
+    {
+      status: 400,
     }
+  );
+}
 
     await prisma.payment.create({
       data: {

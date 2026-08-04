@@ -124,9 +124,12 @@ model Payment {
 
   phone             String?
 
-  checkoutRequestId String?
+  checkoutRequestId String? @unique
   merchantRequestId String?
   mpesaReceipt      String?
+
+  resultCode        Int?
+  resultDesc        String?
 
   createdAt         DateTime @default(now())
 
