@@ -6,24 +6,42 @@ export async function GET(
   { params }
 ) {
   try {
-    const payment =
-      await prisma.payment.findFirst({
+    const { checkoutRequestId } = await params;
+
+    console.log(
+      "========== PAYMENT STATUS CHECK =========="
+    );
+
+    console.log(
+      "CheckoutRequestID:",
+      checkoutRequestId
+    );
+
+    const session =
+      await prisma.paymentSession.findFirst({
         where: {
-          checkoutRequestId:
-            params.checkoutRequestId,
+          checkoutRequestId,
         },
 
         select: {
           status: true,
-          mpesaReceipt: true,
+          receipt: true,
+          phone: true,
+          amount: true,
           saleId: true,
+          updatedAt: true,
         },
       });
 
-    if (!payment) {
+    if (!session) {
+      console.log(
+        "Payment session not found."
+      );
+
       return NextResponse.json(
         {
-          error: "Payment not found",
+          success: false,
+          error: "Payment session not found.",
         },
         {
           status: 404,
@@ -31,15 +49,48 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(payment);
+    console.log(
+      "Payment session status:",
+      session.status
+    );
+
+    return NextResponse.json({
+      success: true,
+
+      status: session.status,
+
+      verified:
+        session.status === "VERIFIED",
+
+      failed:
+        session.status === "FAILED",
+
+      saleId: session.saleId,
+
+      receipt: session.receipt,
+
+      phone: session.phone,
+
+      amount: Number(session.amount),
+
+      updatedAt: session.updatedAt,
+    });
 
   } catch (error) {
+
+    console.error(
+      "Payment status error:",
+      error
+    );
+
     return NextResponse.json(
       {
+        success: false,
+
         error:
           error instanceof Error
             ? error.message
-            : "Failed",
+            : "Failed to fetch payment status.",
       },
       {
         status: 500,

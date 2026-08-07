@@ -7,6 +7,9 @@ type MpesaModalProps = {
   setMpesaPhone: (phone: string) => void;
   onCancel: () => void;
   onSend: () => void;
+waitingForMpesa: boolean;
+
+
 };
 
 export default function MpesaModal({
@@ -16,6 +19,7 @@ export default function MpesaModal({
   setMpesaPhone,
   onCancel,
   onSend,
+  waitingForMpesa
 }: MpesaModalProps) {
   if (!show) return null;
 
@@ -44,7 +48,25 @@ export default function MpesaModal({
           Amount: KES {total.toLocaleString()}
         </div>
 
+
+
+{waitingForMpesa && (
+  <div className="bg-yellow-100 text-yellow-800 p-3 rounded-lg mb-4">
+    Waiting for customer payment...
+  </div>
+)}
+
+
+
+
         <div className="flex gap-3">
+
+
+
+
+
+
+
 
           <button
             onClick={onCancel}

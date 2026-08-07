@@ -5,14 +5,14 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
-    console.log(
-      "========== MPESA CALLBACK =========="
-    );
+    console.log("========== MPESA CALLBACK RECEIVED ==========");
     console.log(JSON.stringify(body, null, 2));
 
     const callback = body?.Body?.stkCallback;
 
     if (!callback) {
+      console.log("NO STK CALLBACK");
+
       return NextResponse.json({
         ResultCode: 0,
         ResultDesc: "Accepted",
@@ -26,26 +26,35 @@ export async function POST(request) {
       ResultDesc,
     } = callback;
 
-    // -----------------------------
-    // PAYMENT FAILED OR CANCELLED
-    // -----------------------------
-    if (ResultCode !== 0) {
-      await prisma.payment.updateMany({
+    console.log("CheckoutRequestID:", CheckoutRequestID);
+    console.log("ResultCode:", ResultCode);
+    console.log("ResultDesc:", ResultDesc);
+
+    // Find the PaymentSession
+    const session =
+      await prisma.paymentSession.findFirst({
         where: {
           checkoutRequestId: CheckoutRequestID,
         },
-        data: {
-          status: "FAILED",
-          resultCode: ResultCode,
-          resultDesc: ResultDesc,
-        },
       });
 
-      console.log("Payment Failed:", {
-        CheckoutRequestID,
-        ResultCode,
-        ResultDesc,
-      });
+    console.log(
+      "SESSION:",
+      session
+        ? {
+            id: session.id,
+            saleId: session.saleId,
+            checkoutRequestId:
+              session.checkoutRequestId,
+            status: session.status,
+          }
+        : "NOT FOUND"
+    );
+
+    if (!session) {
+      console.log(
+        "❌ PAYMENT SESSION NOT FOUND"
+      );
 
       return NextResponse.json({
         ResultCode: 0,
@@ -53,9 +62,41 @@ export async function POST(request) {
       });
     }
 
-    // -----------------------------
-    // SUCCESSFUL PAYMENT
-    // -----------------------------
+    // ==========================================
+    // FAILED / CANCELLED
+    // ==========================================
+
+    if (ResultCode !== 0) {
+      console.log(
+        "❌ CUSTOMER DID NOT COMPLETE PAYMENT"
+      );
+
+      const updated =
+        await prisma.paymentSession.update({
+          where: {
+            id: session.id,
+          },
+
+          data: {
+            status: "FAILED",
+          },
+        });
+
+      console.log(
+        "UPDATED SESSION:",
+        updated.status
+      );
+
+      return NextResponse.json({
+        ResultCode: 0,
+        ResultDesc: "Accepted",
+      });
+    }
+
+    // ==========================================
+    // SUCCESS
+    // ==========================================
+
     const items =
       callback.CallbackMetadata?.Item || [];
 
@@ -65,36 +106,96 @@ export async function POST(request) {
       metadata[item.Name] = item.Value;
     }
 
-    const payment = await prisma.payment.update({
-      where: {
-        checkoutRequestId: CheckoutRequestID,
-      },
-      data: {
-        status: "VERIFIED",
-        phone: String(metadata.PhoneNumber),
-        mpesaReceipt: metadata.MpesaReceiptNumber,
-        amount: Number(metadata.Amount),
-        merchantRequestId: MerchantRequestID,
-        resultCode: ResultCode,
-        resultDesc: ResultDesc,
-      },
-    });
+    console.log(
+      "PAYMENT METADATA:",
+      metadata
+    );
+
+    const updatedSession =
+      await prisma.paymentSession.update({
+        where: {
+          id: session.id,
+        },
+
+        data: {
+          status: "VERIFIED",
+
+          receipt:
+            metadata.MpesaReceiptNumber
+              ? String(
+                  metadata.MpesaReceiptNumber
+                )
+              : null,
+        },
+      });
+
+    console.log(
+      "SESSION VERIFIED:",
+      updatedSession.status
+    );
+
+    // Prevent duplicate Payment records
+    const existingPayment =
+      await prisma.payment.findFirst({
+        where: {
+          checkoutRequestId:
+            CheckoutRequestID,
+        },
+      });
+
+    if (!existingPayment) {
+      await prisma.payment.create({
+        data: {
+          saleId: session.saleId,
+
+          method: "MPESA",
+
+          amount: Number(
+            metadata.Amount ?? session.amount
+          ),
+
+          status: "VERIFIED",
+
+          phone:
+            metadata.PhoneNumber
+              ? String(
+                  metadata.PhoneNumber
+                )
+              : session.phone,
+
+          checkoutRequestId:
+            CheckoutRequestID,
+
+          merchantRequestId:
+            MerchantRequestID,
+
+          mpesaReceipt:
+            metadata.MpesaReceiptNumber
+              ? String(
+                  metadata.MpesaReceiptNumber
+                )
+              : null,
+        },
+      });
+
+      console.log(
+        "✅ PAYMENT RECORD CREATED"
+      );
+    }
 
     await prisma.sale.update({
       where: {
-        id: payment.saleId,
+        id: session.saleId,
       },
+
       data: {
         status: "COMPLETED",
       },
     });
 
-    console.log("Payment Verified");
-    console.log({
-      receipt: metadata.MpesaReceiptNumber,
-      amount: metadata.Amount,
-      phone: metadata.PhoneNumber,
-    });
+    console.log(
+      "========== PAYMENT VERIFIED =========="
+    );
 
     return NextResponse.json({
       ResultCode: 0,
@@ -102,8 +203,13 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error("Callback Error:", error);
+    console.error(
+      "========== CALLBACK ERROR =========="
+    );
 
+    console.error(error);
+
+    // Always acknowledge Safaricom
     return NextResponse.json({
       ResultCode: 0,
       ResultDesc: "Accepted",

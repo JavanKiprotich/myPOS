@@ -136,25 +136,31 @@ console.log("SAFARICOM RESPONSE:", JSON.stringify(data, null, 2));
   );
 }
 
-    await prisma.payment.create({
-      data: {
-        saleId,
+   await prisma.paymentSession.create({
+  data: {
+    saleId,
 
-        method: "MPESA",
+    method: "MPESA",
 
-        amount: Number(amount),
+    amount: Number(amount),
 
-        status: "PENDING",
+    status: "PENDING",
 
-        phone,
+    phone,
 
-        checkoutRequestId:
-          data.CheckoutRequestID,
+    checkoutRequestId: data.CheckoutRequestID,
 
-        merchantRequestId:
-          data.MerchantRequestID,
-      },
-    });
+    merchantRequestId: data.MerchantRequestID,
+
+    attempts: 1,
+
+    expiresAt: new Date(
+      Date.now() + 5 * 60 * 1000 // 5 minutes
+    ),
+  },
+});
+
+
 
     return NextResponse.json({
       success: true,

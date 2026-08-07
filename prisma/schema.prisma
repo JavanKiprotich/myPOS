@@ -95,10 +95,13 @@ model Sale {
   syncStatus String     @default("PENDING")
   createdAt  DateTime   @default(now())
   payments   Payment[]
+   paymentSessions PaymentSession[]
   cashier    User       @relation("CashierSales", fields: [cashierId], references: [id])
   customer   Customer?  @relation(fields: [customerId], references: [id])
   store      Store      @relation(fields: [storeId], references: [id])
   items      SaleItem[]
+
+  
 }
 
 model SaleItem {
@@ -133,10 +136,51 @@ model Payment {
 
   createdAt         DateTime @default(now())
 
+  verifiedAt        DateTime?
+verifiedByApi     Boolean @default(false)
+
   sale Sale @relation(fields: [saleId], references: [id])
 
   @@index([checkoutRequestId])
 }
+
+model PaymentSession {
+  id                  String   @id @default(cuid())
+
+  saleId              String
+
+  method              PaymentMethod
+
+  amount              Decimal @db.Decimal(10,2)
+
+  status              PaymentStatus @default(PENDING)
+
+  phone               String?
+
+  receipt             String?
+
+  checkoutRequestId   String?
+  merchantRequestId   String?
+
+  resultCode Int?
+resultDesc String?
+
+  attempts            Int @default(1)
+
+  expiresAt           DateTime
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  sale Sale @relation(fields: [saleId], references: [id])
+
+  @@index([saleId])
+  @@index([status])
+  @@index([checkoutRequestId])
+  @@index([receipt])
+  @@index([phone])
+}
+
 
 model CreditAccount {
   id           String              @id @default(cuid())

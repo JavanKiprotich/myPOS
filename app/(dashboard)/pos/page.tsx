@@ -72,6 +72,15 @@ const [toast, setToast] = useState({
 const [showScanner, setShowScanner] = useState(false);
 
 
+const [checkoutRequestId, setCheckoutRequestId] =
+  useState<string | null>(null);
+
+const [waitingForMpesa, setWaitingForMpesa] =
+  useState(false);
+
+
+
+
  useEffect(() => {
   loadUser();
   loadProducts();
@@ -727,6 +736,125 @@ function formatMpesaPhone(phone: string) {
 }
 
 
+
+async function checkPaymentStatus(
+  checkoutRequestId: string
+) {
+  const response = await fetch(
+    `/api/mpesa/status/${checkoutRequestId}`
+  );
+
+  return await response.json();
+}
+
+
+
+useEffect(() => {
+  if (!checkoutRequestId) {
+    return;
+  }
+
+  let stopped = false;
+
+  const checkStatus = async () => {
+    try {
+      const response = await fetch(
+        `/api/mpesa/status/${checkoutRequestId}`,
+        {
+          cache: "no-store",
+        }
+      );
+
+      const payment = await response.json();
+
+      console.log(
+        "M-Pesa payment status:",
+        payment
+      );
+
+      if (stopped) {
+        return;
+      }
+
+      if (payment.verified) {
+        stopped = true;
+
+        playSuccess();
+
+        showToast(
+          "Payment received.",
+          "success"
+        );
+
+        setWaitingForMpesa(false);
+        setCheckoutRequestId(null);
+        setShowMpesaModal(false);
+        setCart([]);
+
+        window.location.href =
+          `/receipt/${payment.saleId}`;
+
+        return;
+      }
+
+      if (payment.failed) {
+        stopped = true;
+
+        playError();
+
+        showToast(
+          payment.resultDesc ||
+            "M-Pesa payment was cancelled.",
+          "error"
+        );
+
+        setWaitingForMpesa(false);
+        setCheckoutRequestId(null);
+        setShowMpesaModal(false);
+
+        return;
+      }
+
+    } catch (error) {
+      console.error(
+        "M-Pesa status check failed:",
+        error
+      );
+    }
+  };
+
+  // Check immediately
+  checkStatus();
+
+  // Then every 3 seconds
+  const interval = setInterval(
+    checkStatus,
+    3000
+  );
+
+  return () => {
+    stopped = true;
+    clearInterval(interval);
+  };
+
+}, [checkoutRequestId]);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   async function completeSale() {
 
  if (activeRunningBillId) {
@@ -949,9 +1077,24 @@ async function sendStkPush() {
 
   alert(JSON.stringify(data, null, 2));
 }
+
+
 async function handleMpesaPayment() {
+
+console.log("Pending Sale ID:", pendingSaleId);
+
   try {
-const phone = formatMpesaPhone(mpesaPhone);
+    const phone = formatMpesaPhone(mpesaPhone);
+
+    if (!phone) {
+      showToast("Enter a valid Kenyan phone number.", "error");
+      return;
+    }
+
+    if (!pendingSaleId) {
+      showToast("No sale available for payment.", "error");
+      return;
+    }
 
     const response = await fetch("/api/mpesa/stkpush", {
       method: "POST",
@@ -959,28 +1102,44 @@ const phone = formatMpesaPhone(mpesaPhone);
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-  saleId: pendingSaleId,
-  phone,
-  amount: total,
-}),
+        saleId: pendingSaleId,
+        phone,
+        amount: total,
+      }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      showToast(data.error || "Failed to send STK Push", "error");
+      showToast(
+        data.error ||
+        data.message ||
+        "Failed to send STK Push",
+        "error"
+      );
       return;
     }
 
-    showToast("STK Push sent successfully.", "success");
+    // Start polling only after the STK request was accepted
+    setCheckoutRequestId(data.checkoutRequestId);
+    setWaitingForMpesa(true);
+
+    showToast(
+      "STK Push sent successfully. Waiting for customer payment...",
+      "success"
+    );
+
     setShowMpesaModal(false);
 
   } catch (error) {
     console.error(error);
-    showToast("Failed to send STK Push.", "error");
+
+    showToast(
+      "Failed to send STK Push.",
+      "error"
+    );
   }
 }
-  
   return (
     <div className="min-h-screen bg-gray-50 p-3 lg:p-6">
 
@@ -1387,6 +1546,8 @@ const phone = formatMpesaPhone(mpesaPhone);
   total={total} // replace with your total variable
   mpesaPhone={mpesaPhone}
   setMpesaPhone={setMpesaPhone}
+ waitingForMpesa={waitingForMpesa}
+
   onCancel={() => setShowMpesaModal(false)}
   onSend={handleMpesaPayment}
 />
